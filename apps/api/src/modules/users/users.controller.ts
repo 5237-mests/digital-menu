@@ -7,10 +7,10 @@ import type { PublicUser } from './types/user-record';
 import { UsersService } from './users.service';
 
 @Controller('users')
-// @UseGuards(JwtAuthGuard, RolesGuard)
-// @Roles('ADMIN')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   findAll(): Promise<PublicUser[]> {
@@ -19,7 +19,6 @@ export class UsersController {
 
   @Post()
   create(@Body() dto: CreateUserDto): Promise<PublicUser> {
-    console.log("dto: ", dto)
     return this.usersService.create(dto);
   }
 
