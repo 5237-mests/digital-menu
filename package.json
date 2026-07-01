@@ -1,0 +1,30 @@
+{
+  "name": "restaurant-system",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "pnpm --parallel --filter @restaurant/api --filter @restaurant/web dev",
+    "dev:api": "pnpm --filter @restaurant/api dev",
+    "dev:web": "pnpm --filter @restaurant/web dev",
+    "db:migrate": "node database/scripts/migrate.mjs",
+    "db:seed": "node database/scripts/seed.mjs",
+    "db:setup": "pnpm db:migrate && pnpm db:seed",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:phase1": "node scripts/verify-workspace.mjs",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "dependencies": {
+    "mysql2": "3.11.5"
+  }
+}

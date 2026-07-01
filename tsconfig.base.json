@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@restaurant/shared-types": ["packages/shared-types/src/index.ts"],
+      "@restaurant/shared-constants": ["packages/shared-constants/src/index.ts"],
+      "@restaurant/shared-utils": ["packages/shared-utils/src/index.ts"]
+    }
+  }
+}
