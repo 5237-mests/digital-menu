@@ -26,8 +26,8 @@ async function bootstrap(): Promise<void> {
   );
 
   const staticRoot = join(__dirname, '..', '..', 'web', 'build');
-  // if (process.env.NODE_ENV === 'production' && existsSync(staticRoot)) {
-  if (existsSync(staticRoot)) {
+  if (process.env.NODE_ENV === 'production' && existsSync(staticRoot)) {
+    // if (existsSync(staticRoot)) {
     app.useStaticAssets(staticRoot, { index: false });
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' || API_ROUTE_PATTERN.test(req.path)) {
