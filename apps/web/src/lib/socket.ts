@@ -2,7 +2,8 @@ import { REALTIME_EVENTS } from '@restaurant/shared-constants';
 import type { OrderDetail } from '@restaurant/shared-types';
 import { io, type Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.PUBLIC_API_URL ?? undefined;
+// const SOCKET_URL = import.meta.env.PUBLIC_API_URL ?? undefined;
+const SOCKET_URL = 'https://www.menu.hypertechtechnology.com';
 
 let socket: Socket | null = null;
 
