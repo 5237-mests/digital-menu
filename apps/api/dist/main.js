@@ -21,6 +21,7 @@ async function bootstrap() {
     }));
     const staticRoot = (0, node_path_1.join)(__dirname, '..', '..', 'web', 'build');
     if (process.env.NODE_ENV === 'production' && (0, node_fs_1.existsSync)(staticRoot)) {
+        // if (existsSync(staticRoot)) {
         app.useStaticAssets(staticRoot, { index: false });
         app.use((req, res, next) => {
             if (req.method !== 'GET' ||
