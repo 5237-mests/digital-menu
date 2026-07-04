@@ -4,7 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { NextFunction, Request, Response } from 'express';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { AppModule } from './modules/app.module';
 
 const API_ROUTE_PATTERN =
@@ -27,10 +27,13 @@ async function bootstrap(): Promise<void> {
 
   const staticRoot = join(__dirname, '..', '..', 'web', 'build');
   if (process.env.NODE_ENV === 'production' && existsSync(staticRoot)) {
-    // if (existsSync(staticRoot)) {
     app.useStaticAssets(staticRoot, { index: false });
     app.use((req: Request, res: Response, next: NextFunction) => {
-      if (req.method !== 'GET' || API_ROUTE_PATTERN.test(req.path)) {
+      if (
+        req.method !== 'GET' ||
+        API_ROUTE_PATTERN.test(req.path) ||
+        extname(req.path)
+      ) {
         next();
         return;
       }
