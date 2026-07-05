@@ -10,10 +10,23 @@ import { buildMysqlPoolConfig } from './mysql-pool.config';
   providers: [
     {
       provide: MYSQL_POOL,
-      useFactory: () => createPool(buildMysqlPoolConfig())
+      // useFactory: () => createPool(buildMysqlPoolConfig())
+
+      useFactory: async () => {
+        const pool = createPool(buildMysqlPoolConfig());
+
+        try {
+          await pool.query('SELECT 1');
+          console.log('[DB] Connected successfully');
+          return pool;
+        } catch (error) {
+          console.error('[DB] Connection failed:', error);
+          throw error;
+        }
+      }
     },
     DatabaseService
   ],
   exports: [MYSQL_POOL, DatabaseService]
 })
-export class DatabaseModule {}
+export class DatabaseModule { }

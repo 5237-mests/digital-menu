@@ -33,19 +33,28 @@
 </script>
 
 <main class="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-4 py-10">
-  <a class="text-sm text-teal-700" href={`/menu/${$page.params.qrCode}`}
-    >Back to menu</a
-  >
+  <div class="flex flex-wrap gap-3">
+    <a class="text-sm text-teal-700" href={`/menu/${$page.params.qrCode}`}
+      >Back to menu</a
+    >
+    <a
+      class="text-sm text-teal-700"
+      href={`/orders/track?orderId=${$page.params.orderId}`}>Track this order</a
+    >
+  </div>
 
   {#if error}
-    <p class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+    <p class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+      Oops! Our system couldn't find an order with that Order Number. Please
+      double-check the number and try again.
+    </p>
   {:else if orderDetail}
     <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <p class="text-sm uppercase tracking-[0.2em] text-teal-700">
         Order tracking
       </p>
       <h1 class="mt-2 text-2xl font-semibold">
-        {orderDetail.order.orderNumber}
+        Order Number: {orderDetail.order.id}
       </h1>
       <p class="mt-4 text-lg font-medium text-slate-900">
         {statusLabels[orderDetail.order.status]}

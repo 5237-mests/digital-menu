@@ -63,20 +63,6 @@ export class OrdersRepository {
     return rows[0] ?? null;
   }
 
-  async findItemsByOrderId2(orderId: number): Promise<OrderItemRecord[]> {
-    const [rows] = await this.pool.execute<OrderItemRecord[]>(
-      `
-        SELECT id, order_id, menu_item_id, menu_items.name, quantity, price, notes, created_at
-        FROM order_items
-        JOIN menu_items ON menu_items.id = order_items.menu_item_id
-        WHERE order_id = ?
-        ORDER BY id ASC
-      `,
-      [orderId]
-    );
-
-    return rows;
-  }
   async findItemsByOrderId(orderId: number): Promise<OrderItemRecord[]> {
     const [rows] = await this.pool.execute<OrderItemRecord[]>(
       `

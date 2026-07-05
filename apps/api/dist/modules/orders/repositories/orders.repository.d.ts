@@ -18,7 +18,6 @@ export declare class OrdersRepository {
     constructor(pool: Pool);
     findAll(status?: OrderStatus): Promise<OrderRecord[]>;
     findById(id: number): Promise<OrderRecord | null>;
-    findItemsByOrderId2(orderId: number): Promise<OrderItemRecord[]>;
     findItemsByOrderId(orderId: number): Promise<OrderItemRecord[]>;
     resolveMenuItems(items: NewOrderItemInput[]): Promise<ResolvedOrderItem[]>;
     createOrder(orderNumber: string, tableId: number, items: ResolvedOrderItem[]): Promise<OrderRecord>;

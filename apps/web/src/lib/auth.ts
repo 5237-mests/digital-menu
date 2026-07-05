@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import type { PublicUser } from '@restaurant/shared-types';
+import { api } from './api';
 
 const ACCESS_TOKEN_KEY = 'restaurant.accessToken';
 const REFRESH_TOKEN_KEY = 'restaurant.refreshToken';
@@ -63,4 +64,18 @@ export function clearAuthState(): void {
 export function requireRole(roles: Array<PublicUser['role']>): boolean {
   const user = state.user;
   return Boolean(user && roles.includes(user.role));
+}
+
+export async function logout(): Promise<void> {
+  const auth = getAuthState();
+
+  if (auth.refreshToken) {
+    try {
+      await api.logout(auth.refreshToken);
+    } catch {
+      // ignore and still clear local state
+    }
+  }
+
+  clearAuthState();
 }

@@ -210,5 +210,13 @@ export const api = {
       token,
       body: JSON.stringify(payload)
     });
-  }
+  },
+
+  logout(refreshToken: string) {
+    return request<{ success: true }>('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken })
+    });
+  },
 };
+

@@ -45,16 +45,6 @@ let OrdersRepository = class OrdersRepository {
       `, [id]);
         return rows[0] ?? null;
     }
-    async findItemsByOrderId2(orderId) {
-        const [rows] = await this.pool.execute(`
-        SELECT id, order_id, menu_item_id, menu_items.name, quantity, price, notes, created_at
-        FROM order_items
-        JOIN menu_items ON menu_items.id = order_items.menu_item_id
-        WHERE order_id = ?
-        ORDER BY id ASC
-      `, [orderId]);
-        return rows;
-    }
     async findItemsByOrderId(orderId) {
         const [rows] = await this.pool.execute(`
       SELECT
