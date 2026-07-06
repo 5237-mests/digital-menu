@@ -22,19 +22,18 @@ exports.DatabaseModule = DatabaseModule = __decorate([
         providers: [
             {
                 provide: database_constants_1.MYSQL_POOL,
-                // useFactory: () => createPool(buildMysqlPoolConfig())
-                useFactory: async () => {
-                    const pool = (0, promise_1.createPool)((0, mysql_pool_config_1.buildMysqlPoolConfig)());
-                    try {
-                        await pool.query('SELECT 1');
-                        console.log('[DB] Connected successfully');
-                        return pool;
-                    }
-                    catch (error) {
-                        console.error('[DB] Connection failed:', error);
-                        throw error;
-                    }
-                }
+                useFactory: () => (0, promise_1.createPool)((0, mysql_pool_config_1.buildMysqlPoolConfig)())
+                // useFactory: async () => {
+                //   const pool = createPool(buildMysqlPoolConfig());
+                //   try {
+                //     await pool.query('SELECT 1');
+                //     console.log('[DB] Connected successfully');
+                //     return pool;
+                //   } catch (error) {
+                //     console.error('[DB] Connection failed:', error);
+                //     throw error;
+                //   }
+                // }
             },
             database_service_1.DatabaseService
         ],
