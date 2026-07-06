@@ -21,10 +21,19 @@ async function bootstrap() {
     }));
     const staticRoot = (0, node_path_1.join)(__dirname, '..', '..', 'web', 'build');
     const uploadRoot = (0, node_path_1.join)(__dirname, 'uploads');
-    if (!(0, node_fs_1.existsSync)(uploadRoot)) {
-        (0, node_fs_1.mkdirSync)(uploadRoot, { recursive: true });
+    try {
+        if (!(0, node_fs_1.existsSync)(uploadRoot)) {
+            (0, node_fs_1.mkdirSync)(uploadRoot, { recursive: true });
+        }
+        app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
     }
-    app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
+    catch (err) {
+        // In some deployment environments (read-only file systems) creating
+        // the uploads folder will fail — log a warning and continue so the
+        // server can still start without crashing.
+        // eslint-disable-next-line no-console
+        console.warn('Could not create or serve uploads directory:', err);
+    }
     if ((0, node_fs_1.existsSync)(staticRoot)) {
         app.useStaticAssets(staticRoot, { index: false });
         app.use((req, res, next) => {

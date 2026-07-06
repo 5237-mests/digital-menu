@@ -27,10 +27,18 @@ async function bootstrap(): Promise<void> {
 
   const staticRoot = join(__dirname, '..', '..', 'web', 'build');
   const uploadRoot = join(__dirname, 'uploads');
-  if (!existsSync(uploadRoot)) {
-    mkdirSync(uploadRoot, { recursive: true });
+  try {
+    if (!existsSync(uploadRoot)) {
+      mkdirSync(uploadRoot, { recursive: true });
+    }
+    app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
+  } catch (err) {
+    // In some deployment environments (read-only file systems) creating
+    // the uploads folder will fail — log a warning and continue so the
+    // server can still start without crashing.
+    // eslint-disable-next-line no-console
+    console.warn('Could not create or serve uploads directory:', err);
   }
-  app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
 
   if (existsSync(staticRoot)) {
     app.useStaticAssets(staticRoot, { index: false });
