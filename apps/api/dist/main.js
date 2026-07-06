@@ -20,6 +20,11 @@ async function bootstrap() {
         transform: true
     }));
     const staticRoot = (0, node_path_1.join)(__dirname, '..', '..', 'web', 'build');
+    const uploadRoot = (0, node_path_1.join)(__dirname, 'uploads');
+    if (!(0, node_fs_1.existsSync)(uploadRoot)) {
+        (0, node_fs_1.mkdirSync)(uploadRoot, { recursive: true });
+    }
+    app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
     if ((0, node_fs_1.existsSync)(staticRoot)) {
         app.useStaticAssets(staticRoot, { index: false });
         app.use((req, res, next) => {

@@ -14,6 +14,10 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenuItemsController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const node_fs_1 = require("node:fs");
+const node_path_1 = require("node:path");
 const optional_current_user_decorator_1 = require("../auth/decorators/optional-current-user.decorator");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
@@ -22,6 +26,25 @@ const roles_guard_1 = require("../auth/guards/roles.guard");
 const create_menu_item_dto_1 = require("./dto/create-menu-item.dto");
 const update_menu_item_dto_1 = require("./dto/update-menu-item.dto");
 const menu_items_service_1 = require("./menu-items.service");
+const uploadPath = (0, node_path_1.join)(__dirname, '..', '..', 'uploads');
+if (!(0, node_fs_1.existsSync)(uploadPath)) {
+    (0, node_fs_1.mkdirSync)(uploadPath, { recursive: true });
+}
+const storage = (0, multer_1.diskStorage)({
+    destination: uploadPath,
+    filename: (_req, file, callback) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        const extension = (0, node_path_1.extname)(file.originalname).toLowerCase();
+        callback(null, `menu-item-${uniqueSuffix}${extension}`);
+    }
+});
+const imageFileFilter = (_req, file, callback) => {
+    if (!file.mimetype.startsWith('image/')) {
+        callback(new Error('Only image uploads are allowed'), false);
+        return;
+    }
+    callback(null, true);
+};
 let MenuItemsController = class MenuItemsController {
     menuItemsService;
     constructor(menuItemsService) {
@@ -35,7 +58,10 @@ let MenuItemsController = class MenuItemsController {
         const includeUnavailable = user?.role === 'ADMIN';
         return this.menuItemsService.findById(id, includeUnavailable);
     }
-    create(dto) {
+    create(file, dto) {
+        if (file) {
+            dto.image = `/uploads/${file.filename}`;
+        }
         return this.menuItemsService.create(dto);
     }
     update(id, dto) {
@@ -67,9 +93,11 @@ __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('ADMIN'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', { storage, fileFilter: imageFileFilter })),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_menu_item_dto_1.CreateMenuItemDto]),
+    __metadata("design:paramtypes", [Object, create_menu_item_dto_1.CreateMenuItemDto]),
     __metadata("design:returntype", Promise)
 ], MenuItemsController.prototype, "create", null);
 __decorate([

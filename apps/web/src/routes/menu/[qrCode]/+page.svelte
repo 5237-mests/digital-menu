@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { api } from "$lib/api";
+  import { api, resolveImageUrl } from "$lib/api";
   import {
     addToCart,
     cartTotal,
@@ -143,29 +143,43 @@
             </h2>
             <div class="space-y-3">
               {#each getCategoryItems(category.id) as item}
-                <article
-                  class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
-                >
-                  <div class="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 class="font-medium text-slate-900">{item.name}</h3>
-                      {#if item.description}
-                        <p class="mt-1 text-sm text-slate-600">
-                          {item.description}
+                <div class="group" style="perspective: 1200px;">
+                  <article
+                    class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition-transform duration-300 hover:-translate-y-1 hover:scale-[1.02]"
+                    style="transform-style: preserve-3d;"
+                  >
+                    {#if item.image}
+                      <div
+                        class="mb-4 h-48 overflow-hidden rounded-2xl bg-slate-100"
+                      >
+                        <img
+                          src={resolveImageUrl(item.image)}
+                          alt={item.name}
+                          class="h-full w-full object-cover"
+                        />
+                      </div>
+                    {/if}
+                    <div class="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 class="font-medium text-slate-900">{item.name}</h3>
+                        {#if item.description}
+                          <p class="mt-1 text-sm text-slate-600">
+                            {item.description}
+                          </p>
+                        {/if}
+                        <p class="mt-2 text-sm font-medium text-teal-700">
+                          {item.price}Birr
                         </p>
-                      {/if}
-                      <p class="mt-2 text-sm font-medium text-teal-700">
-                        {item.price}Birr
-                      </p>
+                      </div>
+                      <button
+                        class="rounded-xl bg-teal-700 px-3 py-2 text-sm font-medium text-white"
+                        onclick={() => addItem(item.id, item.name, item.price)}
+                      >
+                        Add
+                      </button>
                     </div>
-                    <button
-                      class="rounded-xl bg-teal-700 px-3 py-2 text-sm font-medium text-white"
-                      onclick={() => addItem(item.id, item.name, item.price)}
-                    >
-                      Add
-                    </button>
-                  </div>
-                </article>
+                  </article>
+                </div>
               {/each}
             </div>
           </section>

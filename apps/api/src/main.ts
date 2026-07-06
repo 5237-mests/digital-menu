@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { NextFunction, Request, Response } from 'express';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { AppModule } from './modules/app.module';
 
@@ -26,6 +26,12 @@ async function bootstrap(): Promise<void> {
   );
 
   const staticRoot = join(__dirname, '..', '..', 'web', 'build');
+  const uploadRoot = join(__dirname, 'uploads');
+  if (!existsSync(uploadRoot)) {
+    mkdirSync(uploadRoot, { recursive: true });
+  }
+  app.useStaticAssets(uploadRoot, { prefix: '/uploads/' });
+
   if (existsSync(staticRoot)) {
     app.useStaticAssets(staticRoot, { index: false });
     app.use((req: Request, res: Response, next: NextFunction) => {

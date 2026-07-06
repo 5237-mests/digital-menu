@@ -13,7 +13,11 @@ import type {
 } from '@restaurant/shared-types';
 
 // const API_BASE = " http://localhost:3001";
-const API_BASE = 'https://www.menu.hypertechtechnology.com';
+export const API_BASE = 'https://www.menu.hypertechtechnology.com';
+
+export function resolveImageUrl(imageUrl: string) {
+  return imageUrl.startsWith('/') ? `${API_BASE}${imageUrl}` : imageUrl;
+}
 
 interface RequestOptions extends RequestInit {
   token?: string | null;
@@ -21,7 +25,10 @@ interface RequestOptions extends RequestInit {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers ?? {});
-  headers.set('Content-Type', 'application/json');
+  const isFormData = options.body instanceof FormData;
+  if (!isFormData) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (options.token) {
     headers.set('Authorization', `Bearer ${options.token}`);
@@ -29,7 +36,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers
+    headers,
+    body: isFormData ? options.body : JSON.stringify(options.body)
   });
 
   if (!response.ok) {
@@ -115,11 +123,11 @@ export const api = {
     return request<MenuItem[]>('/menu-items', { token });
   },
 
-  createMenuItem(token: string, payload: Record<string, unknown>) {
+  createMenuItem(token: string, payload: Record<string, unknown> | FormData) {
     return request<MenuItem>('/menu-items', {
       method: 'POST',
       token,
-      body: JSON.stringify(payload)
+      body: payload
     });
   },
 

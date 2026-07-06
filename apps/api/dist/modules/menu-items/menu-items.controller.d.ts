@@ -8,7 +8,7 @@ export declare class MenuItemsController {
     constructor(menuItemsService: MenuItemsService);
     findAll(user?: AuthenticatedUser): Promise<MenuItemDto[]>;
     findById(id: number, user?: AuthenticatedUser): Promise<MenuItemDto>;
-    create(dto: CreateMenuItemDto): Promise<MenuItemDto>;
+    create(file: Express.Multer.File | undefined, dto: CreateMenuItemDto): Promise<MenuItemDto>;
     update(id: number, dto: UpdateMenuItemDto): Promise<MenuItemDto>;
     remove(id: number): Promise<{
         readonly success: true;

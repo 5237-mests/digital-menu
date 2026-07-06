@@ -1,6 +1,8 @@
+import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsPositive, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateMenuItemDto {
+    @Type(() => Number)
     @IsInt()
     @IsPositive()
     categoryId!: number;
@@ -22,6 +24,7 @@ export class CreateMenuItemDto {
     @IsNumberString()
     price!: string;
 
+    @Type(() => Number)
     @IsInt()
     @Min(0)
     preparationTime!: number;
