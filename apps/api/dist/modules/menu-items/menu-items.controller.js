@@ -67,7 +67,7 @@ exports.MenuItemsController = void 0;
 // }
 const common_1 = require("@nestjs/common");
 const multer_1 = require("multer");
-const node_path_1 = require("node:path");
+// import { extname, join } from 'node:path';
 const optional_current_user_decorator_1 = require("../auth/decorators/optional-current-user.decorator");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
@@ -76,16 +76,37 @@ const roles_guard_1 = require("../auth/guards/roles.guard");
 const create_menu_item_dto_1 = require("./dto/create-menu-item.dto");
 const update_menu_item_dto_1 = require("./dto/update-menu-item.dto");
 const menu_items_service_1 = require("./menu-items.service");
-// ====================== MULTER CONFIG (Matching Express) ======================
-const homeDir = process.cwd();
-const uploadRoot = (0, node_path_1.join)(homeDir, 'uploads', 'products');
+const path_1 = require("path");
+const fs_1 = require("fs");
+// 1. Resolve path relative to where the server process is currently running
+const uploadRoot = (0, path_1.join)(process.cwd(), 'uploads', 'products');
 const storage = (0, multer_1.diskStorage)({
-    destination: uploadRoot,
+    // 2. Change string to a function to handle folder checks before saving
+    destination: (_req, _file, callback) => {
+        try {
+            // 3. Create the complete directory structure recursively if missing
+            if (!(0, fs_1.existsSync)(uploadRoot)) {
+                (0, fs_1.mkdirSync)(uploadRoot, { recursive: true });
+            }
+            callback(null, uploadRoot);
+        }
+        catch (error) {
+            callback(new Error('Failed to create upload directory'), 'null'); // Pass the error safely to Multer instead of crashing
+        }
+    },
     filename: (_req, file, callback) => {
         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e2)}`;
-        callback(null, uniqueSuffix + (0, node_path_1.extname)(file.originalname).toLowerCase());
+        callback(null, uniqueSuffix + (0, path_1.extname)(file.originalname).toLowerCase());
     },
 });
+// ====================== MULTER CONFIG (Matching Express) ======================
+// const storage = diskStorage({
+//     destination: uploadRoot,
+//     filename: (_req, file, callback) => {
+//         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e2)}`;
+//         callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
+//     },
+// });
 // const imageFileFilter = (_req: any, file: Express.Multer.File, callback: any) => {
 //     if (file.mimetype.startsWith('image/')) {
 //         callback(null, true);
