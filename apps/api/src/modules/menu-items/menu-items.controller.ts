@@ -10,6 +10,8 @@ import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { MenuItemsService } from './menu-items.service';
 import type { MenuItemDto } from './types/menu-item-record';
 
+import { diskStorage } from 'multer';
+
 @Controller('menu-items')
 export class MenuItemsController {
     constructor(private readonly menuItemsService: MenuItemsService) { }
