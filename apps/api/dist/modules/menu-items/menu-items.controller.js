@@ -66,6 +66,7 @@ exports.MenuItemsController = void 0;
 //     }
 // }
 const common_1 = require("@nestjs/common");
+const multer_1 = require("multer");
 const node_path_1 = require("node:path");
 const optional_current_user_decorator_1 = require("../auth/decorators/optional-current-user.decorator");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
@@ -78,13 +79,13 @@ const menu_items_service_1 = require("./menu-items.service");
 // ====================== MULTER CONFIG (Matching Express) ======================
 const homeDir = '/home/hypertxj';
 const uploadRoot = (0, node_path_1.join)(homeDir, 'uploads', 'products');
-// const storage = diskStorage({
-//     destination: uploadRoot,
-//     filename: (_req, file, callback) => {
-//         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-//         callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
-//     },
-// });
+const storage = (0, multer_1.diskStorage)({
+    destination: uploadRoot,
+    filename: (_req, file, callback) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e2)}`;
+        callback(null, uniqueSuffix + (0, node_path_1.extname)(file.originalname).toLowerCase());
+    },
+});
 // const imageFileFilter = (_req: any, file: Express.Multer.File, callback: any) => {
 //     if (file.mimetype.startsWith('image/')) {
 //         callback(null, true);

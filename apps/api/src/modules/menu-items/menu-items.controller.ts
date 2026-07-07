@@ -79,13 +79,13 @@ import type { MenuItemDto } from './types/menu-item-record';
 const homeDir = '/home/hypertxj';
 const uploadRoot = join(homeDir, 'uploads', 'products');
 
-// const storage = diskStorage({
-//     destination: uploadRoot,
-//     filename: (_req, file, callback) => {
-//         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-//         callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
-//     },
-// });
+const storage = diskStorage({
+    destination: uploadRoot,
+    filename: (_req, file, callback) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e2)}`;
+        callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
+    },
+});
 
 // const imageFileFilter = (_req: any, file: Express.Multer.File, callback: any) => {
 //     if (file.mimetype.startsWith('image/')) {
