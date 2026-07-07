@@ -66,8 +66,6 @@ exports.MenuItemsController = void 0;
 //     }
 // }
 const common_1 = require("@nestjs/common");
-const platform_express_1 = require("@nestjs/platform-express");
-const multer_1 = require("multer");
 const node_path_1 = require("node:path");
 const optional_current_user_decorator_1 = require("../auth/decorators/optional-current-user.decorator");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
@@ -78,28 +76,27 @@ const create_menu_item_dto_1 = require("./dto/create-menu-item.dto");
 const update_menu_item_dto_1 = require("./dto/update-menu-item.dto");
 const menu_items_service_1 = require("./menu-items.service");
 // ====================== MULTER CONFIG (Matching Express) ======================
-const homeDir = process.env.HOME || '/home/mardtryj';
+const homeDir = '/home/hypertxj';
 const uploadRoot = (0, node_path_1.join)(homeDir, 'uploads', 'products');
-const storage = (0, multer_1.diskStorage)({
-    destination: uploadRoot,
-    filename: (_req, file, callback) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        callback(null, uniqueSuffix + (0, node_path_1.extname)(file.originalname).toLowerCase());
-    },
-});
-const imageFileFilter = (_req, file, callback) => {
-    if (file.mimetype.startsWith('image/')) {
-        callback(null, true);
-    }
-    else {
-        callback(new Error('Only image files are allowed'), false);
-    }
-};
-const uploadOptions = {
-    storage,
-    fileFilter: imageFileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-};
+// const storage = diskStorage({
+//     destination: uploadRoot,
+//     filename: (_req, file, callback) => {
+//         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+//         callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
+//     },
+// });
+// const imageFileFilter = (_req: any, file: Express.Multer.File, callback: any) => {
+//     if (file.mimetype.startsWith('image/')) {
+//         callback(null, true);
+//     } else {
+//         callback(new Error('Only image files are allowed'), false);
+//     }
+// };
+// const uploadOptions = {
+//     storage,
+//     fileFilter: imageFileFilter,
+//     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+// };
 // ====================== CONTROLLER ======================
 let MenuItemsController = class MenuItemsController {
     menuItemsService;
@@ -114,19 +111,28 @@ let MenuItemsController = class MenuItemsController {
         const includeUnavailable = user?.role === 'ADMIN';
         return this.menuItemsService.findById(id, includeUnavailable);
     }
-    async create(file, dto) {
-        try {
-            if (file) {
-                dto.image = `/uploads/${file.filename}`;
-            }
-            return await this.menuItemsService.create(dto);
-        }
-        catch (error) {
-            if (file) {
-                // Optional: cleanup file if service fails
-            }
-            throw error;
-        }
+    // @Post()
+    // @UseGuards(JwtAuthGuard, RolesGuard)
+    // @Roles('ADMIN')
+    // @UseInterceptors(FileInterceptor('image', uploadOptions))
+    // async create(
+    //     @UploadedFile() file: Express.Multer.File | undefined,
+    //     @Body() dto: CreateMenuItemDto,
+    // ): Promise<MenuItemDto> {
+    //     try {
+    //         if (file) {
+    //             dto.image = `/uploads/${file.filename}`;
+    //         }
+    //         return await this.menuItemsService.create(dto);
+    //     } catch (error) {
+    //         if (file) {
+    //             // Optional: cleanup file if service fails
+    //         }
+    //         throw error;
+    //     }
+    // }
+    create(dto) {
+        return this.menuItemsService.create(dto);
     }
     update(id, dto) {
         return this.menuItemsService.update(id, dto);
@@ -157,11 +163,9 @@ __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('ADMIN'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', uploadOptions)),
-    __param(0, (0, common_1.UploadedFile)()),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, create_menu_item_dto_1.CreateMenuItemDto]),
+    __metadata("design:paramtypes", [create_menu_item_dto_1.CreateMenuItemDto]),
     __metadata("design:returntype", Promise)
 ], MenuItemsController.prototype, "create", null);
 __decorate([

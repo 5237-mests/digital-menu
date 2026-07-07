@@ -76,30 +76,30 @@ import { MenuItemsService } from './menu-items.service';
 import type { MenuItemDto } from './types/menu-item-record';
 
 // ====================== MULTER CONFIG (Matching Express) ======================
-const homeDir = process.env.HOME || '/home/mardtryj';
+const homeDir = '/home/hypertxj';
 const uploadRoot = join(homeDir, 'uploads', 'products');
 
-const storage = diskStorage({
-    destination: uploadRoot,
-    filename: (_req, file, callback) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
-    },
-});
+// const storage = diskStorage({
+//     destination: uploadRoot,
+//     filename: (_req, file, callback) => {
+//         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+//         callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
+//     },
+// });
 
-const imageFileFilter = (_req: any, file: Express.Multer.File, callback: any) => {
-    if (file.mimetype.startsWith('image/')) {
-        callback(null, true);
-    } else {
-        callback(new Error('Only image files are allowed'), false);
-    }
-};
+// const imageFileFilter = (_req: any, file: Express.Multer.File, callback: any) => {
+//     if (file.mimetype.startsWith('image/')) {
+//         callback(null, true);
+//     } else {
+//         callback(new Error('Only image files are allowed'), false);
+//     }
+// };
 
-const uploadOptions = {
-    storage,
-    fileFilter: imageFileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-};
+// const uploadOptions = {
+//     storage,
+//     fileFilter: imageFileFilter,
+//     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+// };
 
 // ====================== CONTROLLER ======================
 @Controller('menu-items')
@@ -120,25 +120,32 @@ export class MenuItemsController {
         return this.menuItemsService.findById(id, includeUnavailable);
     }
 
+    // @Post()
+    // @UseGuards(JwtAuthGuard, RolesGuard)
+    // @Roles('ADMIN')
+    // @UseInterceptors(FileInterceptor('image', uploadOptions))
+    // async create(
+    //     @UploadedFile() file: Express.Multer.File | undefined,
+    //     @Body() dto: CreateMenuItemDto,
+    // ): Promise<MenuItemDto> {
+    //     try {
+    //         if (file) {
+    //             dto.image = `/uploads/${file.filename}`;
+    //         }
+    //         return await this.menuItemsService.create(dto);
+    //     } catch (error) {
+    //         if (file) {
+    //             // Optional: cleanup file if service fails
+    //         }
+    //         throw error;
+    //     }
+    // }
+
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('ADMIN')
-    @UseInterceptors(FileInterceptor('image', uploadOptions))
-    async create(
-        @UploadedFile() file: Express.Multer.File | undefined,
-        @Body() dto: CreateMenuItemDto,
-    ): Promise<MenuItemDto> {
-        try {
-            if (file) {
-                dto.image = `/uploads/${file.filename}`;
-            }
-            return await this.menuItemsService.create(dto);
-        } catch (error) {
-            if (file) {
-                // Optional: cleanup file if service fails
-            }
-            throw error;
-        }
+    create(@Body() dto: CreateMenuItemDto): Promise<MenuItemDto> {
+        return this.menuItemsService.create(dto);
     }
 
     @Put(':id')
