@@ -81,25 +81,25 @@ import { existsSync, mkdirSync } from 'fs';
 
 // 1. Resolve path relative to where the server process is currently running
 const uploadRoot = join(process.cwd(), 'uploads', 'products');
-
-const storage = diskStorage({
-    // 2. Change string to a function to handle folder checks before saving
-    destination: (_req, _file, callback) => {
-        try {
-            // 3. Create the complete directory structure recursively if missing
-            if (!existsSync(uploadRoot)) {
-                mkdirSync(uploadRoot, { recursive: true });
-            }
-            callback(null, uploadRoot);
-        } catch (error) {
-            callback(new Error('Failed to create upload directory'), 'null'); // Pass the error safely to Multer instead of crashing
-        }
-    },
-    filename: (_req, file, callback) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e2)}`;
-        callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
-    },
-});
+console.log('Upload root directory:', uploadRoot);
+// const storage = diskStorage({
+//     // 2. Change string to a function to handle folder checks before saving
+//     destination: (_req, _file, callback) => {
+//         try {
+//             // 3. Create the complete directory structure recursively if missing
+//             if (!existsSync(uploadRoot)) {
+//                 mkdirSync(uploadRoot, { recursive: true });
+//             }
+//             callback(null, uploadRoot);
+//         } catch (error) {
+//             callback(new Error('Failed to create upload directory'), 'null'); // Pass the error safely to Multer instead of crashing
+//         }
+//     },
+//     filename: (_req, file, callback) => {
+//         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e2)}`;
+//         callback(null, uniqueSuffix + extname(file.originalname).toLowerCase());
+//     },
+// });
 
 // ====================== MULTER CONFIG (Matching Express) ======================
 
