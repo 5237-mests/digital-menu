@@ -11,6 +11,6 @@ export declare class MenuItemsController {
     create(file: Express.Multer.File | undefined, dto: CreateMenuItemDto): Promise<MenuItemDto>;
     update(id: number, dto: UpdateMenuItemDto): Promise<MenuItemDto>;
     remove(id: number): Promise<{
-        readonly success: true;
+        success: boolean;
     }>;
 }
