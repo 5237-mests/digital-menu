@@ -1,4 +1,15 @@
 "use strict";
+// import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UseGuards } from '@nestjs/common';
+// import { OptionalCurrentUser } from '../auth/decorators/optional-current-user.decorator';
+// import { Roles } from '../auth/decorators/roles.decorator';
+// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+// import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+// import { RolesGuard } from '../auth/guards/roles.guard';
+// import type { AuthenticatedUser } from '../auth/types/auth.types';
+// import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+// import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+// import { MenuItemsService } from './menu-items.service';
+// import type { MenuItemDto } from './types/menu-item-record';
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -13,7 +24,51 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenuItemsController = void 0;
+// import { diskStorage } from 'multer';
+// @Controller('menu-items')
+// export class MenuItemsController {
+//     constructor(private readonly menuItemsService: MenuItemsService) { }
+//     @Get()
+//     @UseGuards(OptionalJwtAuthGuard)
+//     findAll(@OptionalCurrentUser() user?: AuthenticatedUser): Promise<MenuItemDto[]> {
+//         const includeUnavailable = user?.role === 'ADMIN';
+//         return this.menuItemsService.findAll(includeUnavailable);
+//     }
+//     @Get(':id')
+//     @UseGuards(OptionalJwtAuthGuard)
+//     findById(
+//         @Param('id', ParseIntPipe) id: number,
+//         @OptionalCurrentUser() user?: AuthenticatedUser
+//     ): Promise<MenuItemDto> {
+//         const includeUnavailable = user?.role === 'ADMIN';
+//         return this.menuItemsService.findById(id, includeUnavailable);
+//     }
+//     @Post()
+//     @UseGuards(JwtAuthGuard, RolesGuard)
+//     @Roles('ADMIN')
+//     create(@Body() dto: CreateMenuItemDto): Promise<MenuItemDto> {
+//         return this.menuItemsService.create(dto);
+//     }
+//     @Put(':id')
+//     @UseGuards(JwtAuthGuard, RolesGuard)
+//     @Roles('ADMIN')
+//     update(
+//         @Param('id', ParseIntPipe) id: number,
+//         @Body() dto: UpdateMenuItemDto
+//     ): Promise<MenuItemDto> {
+//         return this.menuItemsService.update(id, dto);
+//     }
+//     @Delete(':id')
+//     @UseGuards(JwtAuthGuard, RolesGuard)
+//     @Roles('ADMIN')
+//     remove(@Param('id', ParseIntPipe) id: number): Promise<{ readonly success: true }> {
+//         return this.menuItemsService.remove(id).then(() => ({ success: true }));
+//     }
+// }
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const node_path_1 = require("node:path");
 const optional_current_user_decorator_1 = require("../auth/decorators/optional-current-user.decorator");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
@@ -22,6 +77,30 @@ const roles_guard_1 = require("../auth/guards/roles.guard");
 const create_menu_item_dto_1 = require("./dto/create-menu-item.dto");
 const update_menu_item_dto_1 = require("./dto/update-menu-item.dto");
 const menu_items_service_1 = require("./menu-items.service");
+// ====================== MULTER CONFIG (Matching Express) ======================
+const homeDir = process.env.HOME || '/home/mardtryj';
+const uploadRoot = (0, node_path_1.join)(homeDir, 'uploads', 'products');
+const storage = (0, multer_1.diskStorage)({
+    destination: uploadRoot,
+    filename: (_req, file, callback) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        callback(null, uniqueSuffix + (0, node_path_1.extname)(file.originalname).toLowerCase());
+    },
+});
+const imageFileFilter = (_req, file, callback) => {
+    if (file.mimetype.startsWith('image/')) {
+        callback(null, true);
+    }
+    else {
+        callback(new Error('Only image files are allowed'), false);
+    }
+};
+const uploadOptions = {
+    storage,
+    fileFilter: imageFileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+};
+// ====================== CONTROLLER ======================
 let MenuItemsController = class MenuItemsController {
     menuItemsService;
     constructor(menuItemsService) {
@@ -35,8 +114,19 @@ let MenuItemsController = class MenuItemsController {
         const includeUnavailable = user?.role === 'ADMIN';
         return this.menuItemsService.findById(id, includeUnavailable);
     }
-    create(dto) {
-        return this.menuItemsService.create(dto);
+    async create(file, dto) {
+        try {
+            if (file) {
+                dto.image = `/uploads/${file.filename}`;
+            }
+            return await this.menuItemsService.create(dto);
+        }
+        catch (error) {
+            if (file) {
+                // Optional: cleanup file if service fails
+            }
+            throw error;
+        }
     }
     update(id, dto) {
         return this.menuItemsService.update(id, dto);
@@ -52,7 +142,7 @@ __decorate([
     __param(0, (0, optional_current_user_decorator_1.OptionalCurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], MenuItemsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
@@ -61,15 +151,17 @@ __decorate([
     __param(1, (0, optional_current_user_decorator_1.OptionalCurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], MenuItemsController.prototype, "findById", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('ADMIN'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', uploadOptions)),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_menu_item_dto_1.CreateMenuItemDto]),
+    __metadata("design:paramtypes", [Object, create_menu_item_dto_1.CreateMenuItemDto]),
     __metadata("design:returntype", Promise)
 ], MenuItemsController.prototype, "create", null);
 __decorate([
@@ -89,7 +181,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], MenuItemsController.prototype, "remove", null);
 exports.MenuItemsController = MenuItemsController = __decorate([
     (0, common_1.Controller)('menu-items'),
