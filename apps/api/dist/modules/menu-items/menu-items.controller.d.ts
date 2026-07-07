@@ -6,10 +6,9 @@ import type { MenuItemDto } from './types/menu-item-record';
 export declare class MenuItemsController {
     private readonly menuItemsService;
     constructor(menuItemsService: MenuItemsService);
-    private getUploadOptions;
     findAll(user?: AuthenticatedUser): Promise<MenuItemDto[]>;
     findById(id: number, user?: AuthenticatedUser): Promise<MenuItemDto>;
-    create(file: Express.Multer.File | undefined, dto: CreateMenuItemDto): Promise<MenuItemDto>;
+    create(dto: CreateMenuItemDto): Promise<MenuItemDto>;
     update(id: number, dto: UpdateMenuItemDto): Promise<MenuItemDto>;
     remove(id: number): Promise<{
         success: boolean;
