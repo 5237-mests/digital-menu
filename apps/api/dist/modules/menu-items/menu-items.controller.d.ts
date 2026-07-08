@@ -11,6 +11,6 @@ export declare class MenuItemsController {
     create(dto: CreateMenuItemDto): Promise<MenuItemDto>;
     update(id: number, dto: UpdateMenuItemDto): Promise<MenuItemDto>;
     remove(id: number): Promise<{
-        success: boolean;
+        readonly success: true;
     }>;
 }

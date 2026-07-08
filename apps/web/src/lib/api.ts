@@ -115,6 +115,10 @@ export const api = {
     return request<MenuItem[]>('/menu-items', { token });
   },
 
+  getMenuItem(token: string, id: number) {
+    return request<MenuItem>(`/menu-items/${id}`, { token });
+  },
+
   createMenuItem(token: string, payload: Record<string, unknown>) {
     return request<MenuItem>('/menu-items', {
       method: 'POST',
@@ -135,6 +139,32 @@ export const api = {
     return request<{ success: true }>(`/menu-items/${id}`, {
       method: 'DELETE',
       token
+    });
+  },
+
+  uploadImageToCloudinary(file: File) {
+    const cloudName = 'dtexxe70g';
+    const uploadPreset = 'res_pic';
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error(
+        'Missing Cloudinary config. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in your web environment.'
+      );
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    return fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData
+    }).then(async (response) => {
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message ?? 'Cloudinary upload failed');
+      }
+      return data.secure_url as string;
     });
   },
 

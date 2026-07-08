@@ -11,6 +11,7 @@
   } from "$lib/cart";
   import type { PublicMenuResponse } from "@restaurant/shared-types";
   import { onMount } from "svelte";
+  import { CldImage } from "svelte-cloudinary";
 
   let menu = $state<PublicMenuResponse | null>(null);
   let cart = $state(getCart(""));
@@ -141,11 +142,18 @@
             <h2 class="text-xl font-semibold text-slate-900">
               {category.name}
             </h2>
-            <div class="space-y-3">
+            <div class="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
               {#each getCategoryItems(category.id) as item}
                 <article
                   class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
                 >
+                  <CldImage
+                    src={`${item.image}`}
+                    alt="Menu item image"
+                    width={960}
+                    height={600}
+                  />
+
                   <div class="flex items-start justify-between gap-4">
                     <div>
                       <h3 class="font-medium text-slate-900">{item.name}</h3>
