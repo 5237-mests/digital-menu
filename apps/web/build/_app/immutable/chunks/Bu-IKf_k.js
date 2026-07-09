@@ -1,0 +1,1 @@
+import{ax as e,G as u,m as t,f as c,v as a}from"./Bvccz8SC.js";function l(n){t===null&&e(),u&&t.l!==null?f(t).m.push(n):c(()=>{const o=a(n);if(typeof o=="function")return o})}function i(n){t===null&&e(),l(()=>()=>a(n))}function f(n){var o=n.l;return o.u??(o.u={a:[],b:[],m:[]})}export{i as a,l as o};

@@ -16,6 +16,8 @@ export interface ResolvedOrderItem {
 export declare class OrdersRepository {
     private readonly pool;
     constructor(pool: Pool);
+    findAll1(status?: OrderStatus): Promise<OrderRecord[]>;
+    findAll2(status?: OrderStatus): Promise<OrderRecord[]>;
     findAll(status?: OrderStatus): Promise<OrderRecord[]>;
     findById(id: number): Promise<OrderRecord | null>;
     findItemsByOrderId(orderId: number): Promise<OrderItemRecord[]>;

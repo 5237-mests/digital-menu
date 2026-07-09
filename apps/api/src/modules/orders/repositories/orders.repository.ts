@@ -35,7 +35,7 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 export class OrdersRepository {
   constructor(@Inject(MYSQL_POOL) private readonly pool: Pool) { }
 
-  async findAll(status?: OrderStatus): Promise<OrderRecord[]> {
+  async findAll1(status?: OrderStatus): Promise<OrderRecord[]> {
     const [rows] = await this.pool.execute<OrderRecord[]>(
       `
         SELECT id, order_number, table_id, status, total, created_at, updated_at
@@ -43,6 +43,42 @@ export class OrdersRepository {
         ${status ? 'WHERE status = ?' : ''}
         ORDER BY created_at DESC
       `,
+      status ? [status] : []
+    );
+
+    return rows;
+  }
+  async findAll2(status?: OrderStatus): Promise<OrderRecord[]> {
+    // 1. We check if there's a status filter provided
+    const queryConditions = status
+      ? 'WHERE DATE(created_at) = CURDATE() AND status = ?'
+      : 'WHERE DATE(created_at) = CURDATE()';
+
+    const [rows] = await this.pool.execute<OrderRecord[]>(
+      `
+      SELECT id, order_number, table_id, status, total, created_at, updated_at
+      FROM orders
+      ${queryConditions}
+      ORDER BY created_at DESC
+    `,
+      status ? [status] : []
+    );
+
+    return rows;
+  }
+  async findAll(status?: OrderStatus): Promise<OrderRecord[]> {
+    // This approach allows MySQL to use an index on `created_at`
+    const queryConditions = status
+      ? 'WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY AND status = ?'
+      : 'WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY';
+
+    const [rows] = await this.pool.execute<OrderRecord[]>(
+      `
+      SELECT id, order_number, table_id, status, total, created_at, updated_at
+      FROM orders
+      ${queryConditions}
+      ORDER BY created_at DESC
+    `,
       status ? [status] : []
     );
 

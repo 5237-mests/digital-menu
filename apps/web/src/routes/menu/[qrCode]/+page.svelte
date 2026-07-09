@@ -142,7 +142,7 @@
             <h2 class="text-xl font-semibold text-slate-900">
               {category.name}
             </h2>
-            <div class="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4">
+            <div class="space-y-3 lg:grid lg:grid-cols-3 lg:gap-4">
               {#each getCategoryItems(category.id) as item}
                 <article
                   class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
