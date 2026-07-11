@@ -1,35 +1,37 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Pool, ResultSetHeader } from 'mysql2/promise';
 import { MYSQL_POOL } from '../../database/database.constants';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 import type { MenuItemRecord } from '../types/menu-item-record';
 
 @Injectable()
 export class MenuItemsRepository {
-    constructor(@Inject(MYSQL_POOL) private readonly pool: Pool) { }
+    constructor(@Inject(MYSQL_POOL) private readonly pool: Pool, private readonly tenantContext: TenantContextService) { }
 
     async findAll(includeUnavailable = false): Promise<MenuItemRecord[]> {
         const [rows] = await this.pool.execute<MenuItemRecord[]>(
             `
         SELECT id, category_id, name, description, image, price, preparation_time, is_available, created_at, updated_at
         FROM menu_items
-        ${includeUnavailable ? '' : 'WHERE is_available = TRUE'}
+        WHERE tenant_id = ? ${includeUnavailable ? '' : 'AND is_available = TRUE'}
         ORDER BY name ASC
       `
-        );
+        , [this.tenantContext.requireId()]);
 
         return rows;
     }
 
     async findById(id: number, includeUnavailable = false): Promise<MenuItemRecord | null> {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute<MenuItemRecord[]>(
             `
         SELECT id, category_id, name, description, image, price, preparation_time, is_available, created_at, updated_at
         FROM menu_items
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         ${includeUnavailable ? '' : 'AND is_available = TRUE'}
         LIMIT 1
       `,
-            [id]
+            [id, tenantId]
         );
 
         return rows[0] ?? null;
@@ -44,13 +46,14 @@ export class MenuItemsRepository {
         preparationTime: number;
         isAvailable?: boolean;
     }): Promise<MenuItemRecord> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(
             `
-        INSERT INTO menu_items (category_id, name, description, image, price, preparation_time, is_available)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO menu_items (tenant_id, category_id, name, description, image, price, preparation_time, is_available)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
             [
-                data.categoryId,
+                tenantId, data.categoryId,
                 data.name,
                 data.description ?? null,
                 data.image ?? null,
@@ -78,6 +81,7 @@ export class MenuItemsRepository {
         preparationTime?: number;
         isAvailable?: boolean;
     }): Promise<MenuItemRecord> {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new NotFoundException('Menu item not found');
@@ -93,7 +97,7 @@ export class MenuItemsRepository {
             price = COALESCE(?, price),
             preparation_time = COALESCE(?, preparation_time),
             is_available = COALESCE(?, is_available)
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
             [
                 data.categoryId ?? null,
@@ -103,7 +107,7 @@ export class MenuItemsRepository {
                 data.price ?? null,
                 data.preparationTime ?? null,
                 data.isAvailable ?? null,
-                id
+                id, tenantId
             ]
         );
 
@@ -116,12 +120,13 @@ export class MenuItemsRepository {
     }
 
     async delete(id: number): Promise<void> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute<ResultSetHeader>(
             `
         DELETE FROM menu_items
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
-            [id]
+            [id, tenantId]
         );
 
         const affectedRows = Number(result.affectedRows);

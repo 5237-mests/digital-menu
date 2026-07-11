@@ -15,33 +15,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SettingsService = exports.SettingsRepository = void 0;
 const common_1 = require("@nestjs/common");
 const database_constants_1 = require("../database/database.constants");
+const tenant_context_service_1 = require("../tenants/tenant-context.service");
 const setting_record_1 = require("./types/setting-record");
 let SettingsRepository = class SettingsRepository {
     pool;
-    constructor(pool) {
+    tenantContext;
+    constructor(pool, tenantContext) {
         this.pool = pool;
+        this.tenantContext = tenantContext;
     }
     async findAll() {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, setting_key, setting_value, updated_at
         FROM settings
+        WHERE tenant_id = ?
         ORDER BY setting_key ASC
-      `);
+      `, [tenantId]);
         return rows;
     }
     async upsert(key, value) {
+        const tenantId = this.tenantContext.requireId();
         await this.pool.execute(`
-        INSERT INTO settings (setting_key, setting_value)
-        VALUES (?, ?)
+        INSERT INTO settings (tenant_id, setting_key, setting_value)
+        VALUES (?, ?, ?)
         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
-      `, [key, value]);
+      `, [tenantId, key, value]);
     }
 };
 exports.SettingsRepository = SettingsRepository;
 exports.SettingsRepository = SettingsRepository = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_constants_1.MYSQL_POOL)),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [Object, tenant_context_service_1.TenantContextService])
 ], SettingsRepository);
 let SettingsService = class SettingsService {
     settingsRepository;

@@ -32,7 +32,8 @@ export class OptionalJwtAuthGuard implements CanActivate {
       request.user = {
         id: payload.sub,
         email: payload.email,
-        role: payload.role
+        role: payload.role,
+        tenantId: payload.tenantId
       };
     } catch {
       return true;

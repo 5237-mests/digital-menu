@@ -3,7 +3,8 @@ import { basename, join } from 'node:path';
 import { createConnection } from 'mysql2/promise';
 import { formatDatabaseConnectionString, getDatabaseConfig } from './database-config.mjs';
 
-const migrationsDirectory = join(process.cwd(), 'database', 'migrations');
+const directoryArgument = process.argv.find((argument) => argument.startsWith('--dir='));
+const migrationsDirectory = join(process.cwd(), directoryArgument?.slice('--dir='.length) ?? join('database', 'migrations'));
 
 async function ensureMigrationTable(connection) {
   await connection.query(`

@@ -17,7 +17,7 @@ export class SettingsController {
 
   @Put()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('OWNER', 'ADMIN')
   updateSettings(@Body() dto: UpdateSettingsDto): Promise<SettingsDto> {
     return this.settingsService.updateSettings(dto);
   }

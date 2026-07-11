@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PublicController = void 0;
 const common_1 = require("@nestjs/common");
+const tenant_context_service_1 = require("../tenants/tenant-context.service");
 const categories_service_1 = require("../categories/categories.service");
 const menu_items_service_1 = require("../menu-items/menu-items.service");
 const tables_service_1 = require("../tables/tables.service");
@@ -21,12 +22,17 @@ let PublicController = class PublicController {
     tablesService;
     categoriesService;
     menuItemsService;
-    constructor(tablesService, categoriesService, menuItemsService) {
+    tenantContext;
+    constructor(tablesService, categoriesService, menuItemsService, tenantContext) {
         this.tablesService = tablesService;
         this.categoriesService = categoriesService;
         this.menuItemsService = menuItemsService;
+        this.tenantContext = tenantContext;
     }
     async getMenu(qrCode) {
+        const tenant = this.tenantContext.current();
+        if (!tenant || !['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(tenant.status))
+            throw new common_1.ForbiddenException('Restaurant is unavailable');
         const table = await this.tablesService.findByQrCode(qrCode);
         const categories = await this.categoriesService.findAll(false);
         const menuItems = await this.menuItemsService.findAll(false);
@@ -49,5 +55,6 @@ exports.PublicController = PublicController = __decorate([
     (0, common_1.Controller)('public'),
     __metadata("design:paramtypes", [tables_service_1.TablesService,
         categories_service_1.CategoriesService,
-        menu_items_service_1.MenuItemsService])
+        menu_items_service_1.MenuItemsService,
+        tenant_context_service_1.TenantContextService])
 ], PublicController);

@@ -1,35 +1,37 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Pool, ResultSetHeader } from 'mysql2/promise';
 import { MYSQL_POOL } from '../../database/database.constants';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 import type { CategoryRecord } from '../types/category-record';
 
 @Injectable()
 export class CategoriesRepository {
-    constructor(@Inject(MYSQL_POOL) private readonly pool: Pool) { }
+    constructor(@Inject(MYSQL_POOL) private readonly pool: Pool, private readonly tenantContext: TenantContextService) { }
 
     async findAll(includeInactive = false): Promise<CategoryRecord[]> {
         const [rows] = await this.pool.execute<CategoryRecord[]>(
             `
         SELECT id, name, image, is_active, sort_order, created_at, updated_at
         FROM categories
-        ${includeInactive ? '' : 'WHERE is_active = TRUE'}
+        WHERE tenant_id = ? ${includeInactive ? '' : 'AND is_active = TRUE'}
         ORDER BY sort_order ASC, name ASC
       `
-        );
+        , [this.tenantContext.requireId()]);
 
         return rows;
     }
 
     async findById(id: number, includeInactive = false): Promise<CategoryRecord | null> {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute<CategoryRecord[]>(
             `
         SELECT id, name, image, is_active, sort_order, created_at, updated_at
         FROM categories
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         ${includeInactive ? '' : 'AND is_active = TRUE'}
         LIMIT 1
       `,
-            [id]
+            [id, tenantId]
         );
 
         return rows[0] ?? null;
@@ -41,12 +43,13 @@ export class CategoriesRepository {
         isActive?: boolean;
         sortOrder?: number;
     }): Promise<CategoryRecord> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(
             `
-        INSERT INTO categories (name, image, is_active, sort_order)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO categories (tenant_id, name, image, is_active, sort_order)
+        VALUES (?, ?, ?, ?, ?)
       `,
-            [data.name, data.image ?? null, data.isActive ?? true, data.sortOrder ?? 0]
+            [tenantId, data.name, data.image ?? null, data.isActive ?? true, data.sortOrder ?? 0]
         );
 
         const insertId = Number((result as { insertId: number }).insertId);
@@ -65,6 +68,7 @@ export class CategoriesRepository {
         isActive?: boolean;
         sortOrder?: number;
     }): Promise<CategoryRecord> {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new NotFoundException('Category not found');
@@ -77,9 +81,9 @@ export class CategoriesRepository {
             image = COALESCE(?, image),
             is_active = COALESCE(?, is_active),
             sort_order = COALESCE(?, sort_order)
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
-            [data.name ?? null, data.image ?? null, data.isActive ?? null, data.sortOrder ?? null, id]
+            [data.name ?? null, data.image ?? null, data.isActive ?? null, data.sortOrder ?? null, id, tenantId]
         );
 
         const updated = await this.findById(id);
@@ -91,12 +95,13 @@ export class CategoriesRepository {
     }
 
     async delete(id: number): Promise<void> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute<ResultSetHeader>(
             `
         DELETE FROM categories
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
-            [id]
+            [id, tenantId]
         );
 
         const affectedRows = Number(result.affectedRows);

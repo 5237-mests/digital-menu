@@ -15,52 +15,60 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TablesRepository = void 0;
 const common_1 = require("@nestjs/common");
 const database_constants_1 = require("../../database/database.constants");
+const tenant_context_service_1 = require("../../tenants/tenant-context.service");
 let TablesRepository = class TablesRepository {
     pool;
-    constructor(pool) {
+    tenantContext;
+    constructor(pool, tenantContext) {
         this.pool = pool;
+        this.tenantContext = tenantContext;
     }
     async findAll() {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, table_number, qr_code, status, created_at, updated_at
-        FROM \`tables\`
+        FROM \`tables\` WHERE tenant_id = ?
         ORDER BY table_number ASC
-      `);
+      `, [tenantId]);
         return rows;
     }
     async findByQrCode(qrCode) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, table_number, qr_code, status, created_at, updated_at
         FROM \`tables\`
-        WHERE qr_code = ?
+        WHERE qr_code = ? AND tenant_id = ?
         LIMIT 1
-      `, [qrCode]);
+      `, [qrCode, tenantId]);
         return rows[0] ?? null;
     }
     async updateStatus(id, status) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
         UPDATE \`tables\`
         SET status = ?
-        WHERE id = ?
-      `, [status, id]);
+        WHERE id = ? AND tenant_id = ?
+      `, [status, id, tenantId]);
         if (Number(result.affectedRows) === 0) {
             throw new common_1.NotFoundException('Table not found');
         }
     }
     async findById(id) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, table_number, qr_code, status, created_at, updated_at
         FROM \`tables\`
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         LIMIT 1
-      `, [id]);
+      `, [id, tenantId]);
         return rows[0] ?? null;
     }
     async create(data) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
-        INSERT INTO \`tables\` (table_number, qr_code, status)
-        VALUES (?, ?, ?)
-      `, [data.tableNumber, data.qrCode, data.status]);
+        INSERT INTO \`tables\` (tenant_id, table_number, qr_code, status)
+        VALUES (?, ?, ?, ?)
+      `, [tenantId, data.tableNumber, data.qrCode, data.status]);
         const insertId = Number(result.insertId);
         const created = await this.findById(insertId);
         if (!created) {
@@ -69,6 +77,7 @@ let TablesRepository = class TablesRepository {
         return created;
     }
     async update(id, data) {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new common_1.NotFoundException('Table not found');
@@ -78,8 +87,8 @@ let TablesRepository = class TablesRepository {
         SET table_number = COALESCE(?, table_number),
             qr_code = COALESCE(?, qr_code),
             status = COALESCE(?, status)
-        WHERE id = ?
-      `, [data.tableNumber ?? null, data.qrCode ?? null, data.status ?? null, id]);
+        WHERE id = ? AND tenant_id = ?
+      `, [data.tableNumber ?? null, data.qrCode ?? null, data.status ?? null, id, tenantId]);
         const updated = await this.findById(id);
         if (!updated) {
             throw new Error('Failed to reload table after update');
@@ -87,10 +96,11 @@ let TablesRepository = class TablesRepository {
         return updated;
     }
     async delete(id) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
         DELETE FROM \`tables\`
-        WHERE id = ?
-      `, [id]);
+        WHERE id = ? AND tenant_id = ?
+      `, [id, tenantId]);
         const affectedRows = Number(result.affectedRows);
         if (affectedRows === 0) {
             throw new common_1.NotFoundException('Table not found');
@@ -101,5 +111,5 @@ exports.TablesRepository = TablesRepository;
 exports.TablesRepository = TablesRepository = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_constants_1.MYSQL_POOL)),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [Object, tenant_context_service_1.TenantContextService])
 ], TablesRepository);

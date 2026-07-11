@@ -31,7 +31,8 @@ export class AuthService {
     const tokens = await this.issueTokens({
       sub: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      tenantId: user.tenant_id
     });
 
     return {
@@ -53,7 +54,8 @@ export class AuthService {
     return this.issueTokens({
       sub: payload.sub,
       email: payload.email,
-      role: payload.role
+      role: payload.role,
+      tenantId: payload.tenantId
     });
   }
 

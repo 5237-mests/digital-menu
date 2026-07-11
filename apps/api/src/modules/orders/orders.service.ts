@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { TenantContextService } from '../tenants/tenant-context.service';
 import type { NewOrderItemInput } from './repositories/orders.repository';
 import { OrdersRepository } from './repositories/orders.repository';
 import { toOrderItemDto } from './types/order-item-record';
@@ -11,7 +12,8 @@ import type { OrderDetailResponse } from './types/order-detail-response';
 export class OrdersService {
     constructor(
         private readonly ordersRepository: OrdersRepository,
-        private readonly realtimeGateway: RealtimeGateway
+        private readonly realtimeGateway: RealtimeGateway,
+        private readonly tenantContext: TenantContextService
     ) { }
 
     async findAll(status?: OrderStatus): Promise<OrderDto[]> {
@@ -49,7 +51,7 @@ export class OrdersService {
             estimatedPrepTime: resolvedItems.reduce((max, item) => Math.max(max, item.preparationTime), 0)
         };
 
-        this.realtimeGateway.emitOrderCreated(response);
+        this.realtimeGateway.emitOrderCreated(this.tenantContext.requireId(), response);
         return response;
     }
 
@@ -62,7 +64,7 @@ export class OrdersService {
             estimatedPrepTime: await this.ordersRepository.estimatePrepTimeForOrder(id)
         };
 
-        this.realtimeGateway.emitOrderUpdated(response);
+        this.realtimeGateway.emitOrderUpdated(this.tenantContext.requireId(), response);
         return response;
     }
 }

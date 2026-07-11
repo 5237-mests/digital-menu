@@ -21,6 +21,9 @@ const realtime_module_1 = require("./realtime/realtime.module");
 const settings_module_1 = require("./settings/settings.module");
 const tables_module_1 = require("./tables/tables.module");
 const users_module_1 = require("./users/users.module");
+const tenants_module_1 = require("./tenants/tenants.module");
+const platform_module_1 = require("./platform/platform.module");
+const billing_module_1 = require("./billing/billing.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,6 +34,9 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true
             }),
             database_module_1.DatabaseModule,
+            tenants_module_1.TenantsModule,
+            platform_module_1.PlatformModule,
+            billing_module_1.BillingModule,
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
             categories_module_1.CategoriesModule,

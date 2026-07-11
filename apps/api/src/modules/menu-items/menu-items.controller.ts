@@ -34,14 +34,14 @@ export class MenuItemsController {
 
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     create(@Body() dto: CreateMenuItemDto): Promise<MenuItemDto> {
         return this.menuItemsService.create(dto);
     }
 
     @Put(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     update(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateMenuItemDto
@@ -51,7 +51,7 @@ export class MenuItemsController {
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     remove(@Param('id', ParseIntPipe) id: number): Promise<{ readonly success: true }> {
         return this.menuItemsService.remove(id).then(() => ({ success: true }));
     }

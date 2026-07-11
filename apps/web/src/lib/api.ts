@@ -12,8 +12,8 @@ import type {
   Table
 } from '@restaurant/shared-types';
 
-// const API_BASE = " http://localhost:3001";
-const API_BASE = 'https://www.menu.hypertechtechnology.com';
+const API_BASE = " http://localhost:3001";
+// const API_BASE = 'https://www.menu.hypertechtechnology.com';
 
 interface RequestOptions extends RequestInit {
   token?: string | null;

@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { createConnection } from 'mysql2/promise';
 import { formatDatabaseConnectionString, getDatabaseConfig } from './database-config.mjs';
 
-const seedsDirectory = join(process.cwd(), 'database', 'seeds');
+const directoryArgument = process.argv.find((argument) => argument.startsWith('--dir='));
+const seedsDirectory = join(process.cwd(), directoryArgument?.slice('--dir='.length) ?? join('database', 'seeds'));
 
 async function run() {
   const config = getDatabaseConfig();

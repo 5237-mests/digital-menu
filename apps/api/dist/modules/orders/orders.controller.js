@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
 const common_1 = require("@nestjs/common");
+const tenant_context_service_1 = require("../tenants/tenant-context.service");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
@@ -23,8 +24,10 @@ const update_order_status_dto_1 = require("./dto/update-order-status.dto");
 const orders_service_1 = require("./orders.service");
 let OrdersController = class OrdersController {
     ordersService;
-    constructor(ordersService) {
+    tenantContext;
+    constructor(ordersService, tenantContext) {
         this.ordersService = ordersService;
+        this.tenantContext = tenantContext;
     }
     findAll(query) {
         return this.ordersService.findAll(query.status);
@@ -33,6 +36,9 @@ let OrdersController = class OrdersController {
         return this.ordersService.findById(id);
     }
     create(dto) {
+        const tenant = this.tenantContext.current();
+        if (!tenant || !['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(tenant.status))
+            throw new common_1.ForbiddenException('Restaurant is unavailable');
         return this.ordersService.create(dto);
     }
     updateStatus(id, dto) {
@@ -43,7 +49,7 @@ exports.OrdersController = OrdersController;
 __decorate([
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('ADMIN', 'CHEF'),
+    (0, roles_decorator_1.Roles)('OWNER', 'ADMIN', 'CHEF'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [find_orders_query_dto_1.FindOrdersQueryDto]),
@@ -66,7 +72,7 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id/status'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('ADMIN', 'CHEF'),
+    (0, roles_decorator_1.Roles)('OWNER', 'ADMIN', 'CHEF'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -75,5 +81,5 @@ __decorate([
 ], OrdersController.prototype, "updateStatus", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
-    __metadata("design:paramtypes", [orders_service_1.OrdersService])
+    __metadata("design:paramtypes", [orders_service_1.OrdersService, tenant_context_service_1.TenantContextService])
 ], OrdersController);

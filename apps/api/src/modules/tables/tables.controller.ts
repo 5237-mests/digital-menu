@@ -13,7 +13,7 @@ export class TablesController {
 
     @Get()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     findAll(): Promise<TableDto[]> {
         return this.tablesService.findAll();
     }
@@ -25,21 +25,21 @@ export class TablesController {
 
     @Get(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     findById(@Param('id', ParseIntPipe) id: number): Promise<TableDto> {
         return this.tablesService.findById(id);
     }
 
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     create(@Body() dto: CreateTableDto): Promise<TableDto> {
         return this.tablesService.create(dto);
     }
 
     @Put(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     update(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateTableDto
@@ -49,7 +49,7 @@ export class TablesController {
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     remove(@Param('id', ParseIntPipe) id: number): Promise<{ readonly success: true }> {
         return this.tablesService.remove(id).then(() => ({ success: true }));
     }

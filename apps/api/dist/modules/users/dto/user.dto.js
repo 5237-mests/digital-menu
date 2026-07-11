@@ -35,7 +35,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "password", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(['ADMIN', 'CHEF']),
+    (0, class_validator_1.IsEnum)(['OWNER', 'ADMIN', 'CHEF']),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "role", void 0);
 class UpdateUserDto {
@@ -66,6 +66,6 @@ __decorate([
 ], UpdateUserDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(['ADMIN', 'CHEF']),
+    (0, class_validator_1.IsEnum)(['OWNER', 'ADMIN', 'CHEF']),
     __metadata("design:type", String)
 ], UpdateUserDto.prototype, "role", void 0);

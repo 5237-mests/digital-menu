@@ -82,17 +82,19 @@ pnpm install --prod
 This removes dev dependencies, reducing upload size by ~70%.
 
 ### 5. Prepare Upload Package
-Create a deployment folder:
+Create a deployment folder and preserve the `apps/...` paths:
 ```bash
-mkdir deployment
-cp -r apps/api/dist deployment/
-cp -r apps/web/build deployment/
-cp -r packages/shared-* deployment/
+mkdir -p deployment/apps/api/dist deployment/apps/web/build
+cp -r apps/api/dist deployment/apps/api/dist
+cp -r apps/web/build deployment/apps/web/build
+cp -r packages/shared-* deployment/packages/
 cp -r node_modules deployment/
 cp package.json pnpm-lock.yaml deployment/
 ```
 
 Or use your preferred method (Git, SFTP, ZIP).
+
+> Important: The Nest app expects the static web files at `apps/web/build` relative to the app root, so `build` must not be copied directly into the root without the `apps/web` folder.
 
 ---
 
@@ -127,6 +129,12 @@ cd ~/app
 ---
 
 ## Environment Configuration
+
+### SaaS tenant routing and billing
+
+Set `BASE_DOMAIN=example.com` and configure DNS plus TLS for both the base domain and `*.example.com`; every restaurant is addressed as `restaurant-slug.example.com`. For local development, leave `BASE_DOMAIN` unset and use `DEFAULT_TENANT_SLUG=default`.
+
+Set a long `PLATFORM_SETUP_SECRET` before calling `POST /setup/platform-admin` with it in the `X-Setup-Secret` header. Keep `CHAPA_SECRET_KEY` and `CHAPA_WEBHOOK_SECRET` server-only. Configure Chapa to send transaction webhooks to `/billing/webhooks/chapa`; the handler validates its HMAC signature and records each reference idempotently. Automatic Chapa renewals remain disabled unless `CHAPA_RECURRING_ENABLED=true` after merchant capability confirmation.
 
 ### 1. Create `.env` File
 
@@ -180,8 +188,7 @@ DB_NAME=your_db_name
 ```bash
 ssh youruser@yourdomain.com
 cd ~/app
-node database/scripts/migrate.mjs
-node database/scripts/seed.mjs
+pnpm db:saas:setup
 ```
 
 ### Option B: Manual via phpMyAdmin
@@ -190,13 +197,10 @@ node database/scripts/seed.mjs
 2. Select your database
 3. Go to **Import** tab
 4. Upload these files in order:
-   - `database/migrations/001_initial_schema.sql`
-   - `database/migrations/002_auth_refresh_tokens.sql`
-   - `database/migrations/003_settings.sql`
+  - `database/saas/migrations/001_initial_saas_schema.sql`
 5. Click **Import**
 6. Repeat for seed files:
-   - `database/seeds/001_initial_data.sql`
-   - `database/seeds/002_settings.sql`
+  - `database/saas/seeds/001_initial_saas_data.sql`
 
 ### Verify Migration
 

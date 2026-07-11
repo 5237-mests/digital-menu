@@ -12,6 +12,9 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { SettingsModule } from './settings/settings.module';
 import { TablesModule } from './tables/tables.module';
 import { UsersModule } from './users/users.module';
+import { TenantsModule } from './tenants/tenants.module';
+import { PlatformModule } from './platform/platform.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -19,6 +22,9 @@ import { UsersModule } from './users/users.module';
       isGlobal: true
     }),
     DatabaseModule,
+    TenantsModule,
+    PlatformModule,
+    BillingModule,
     UsersModule,
     AuthModule,
     CategoriesModule,

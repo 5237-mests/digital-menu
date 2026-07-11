@@ -15,36 +15,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenuItemsRepository = void 0;
 const common_1 = require("@nestjs/common");
 const database_constants_1 = require("../../database/database.constants");
+const tenant_context_service_1 = require("../../tenants/tenant-context.service");
 let MenuItemsRepository = class MenuItemsRepository {
     pool;
-    constructor(pool) {
+    tenantContext;
+    constructor(pool, tenantContext) {
         this.pool = pool;
+        this.tenantContext = tenantContext;
     }
     async findAll(includeUnavailable = false) {
         const [rows] = await this.pool.execute(`
         SELECT id, category_id, name, description, image, price, preparation_time, is_available, created_at, updated_at
         FROM menu_items
-        ${includeUnavailable ? '' : 'WHERE is_available = TRUE'}
+        WHERE tenant_id = ? ${includeUnavailable ? '' : 'AND is_available = TRUE'}
         ORDER BY name ASC
-      `);
+      `, [this.tenantContext.requireId()]);
         return rows;
     }
     async findById(id, includeUnavailable = false) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, category_id, name, description, image, price, preparation_time, is_available, created_at, updated_at
         FROM menu_items
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         ${includeUnavailable ? '' : 'AND is_available = TRUE'}
         LIMIT 1
-      `, [id]);
+      `, [id, tenantId]);
         return rows[0] ?? null;
     }
     async create(data) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
-        INSERT INTO menu_items (category_id, name, description, image, price, preparation_time, is_available)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO menu_items (tenant_id, category_id, name, description, image, price, preparation_time, is_available)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [
-            data.categoryId,
+            tenantId, data.categoryId,
             data.name,
             data.description ?? null,
             data.image ?? null,
@@ -60,6 +65,7 @@ let MenuItemsRepository = class MenuItemsRepository {
         return created;
     }
     async update(id, data) {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new common_1.NotFoundException('Menu item not found');
@@ -73,7 +79,7 @@ let MenuItemsRepository = class MenuItemsRepository {
             price = COALESCE(?, price),
             preparation_time = COALESCE(?, preparation_time),
             is_available = COALESCE(?, is_available)
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `, [
             data.categoryId ?? null,
             data.name ?? null,
@@ -82,7 +88,7 @@ let MenuItemsRepository = class MenuItemsRepository {
             data.price ?? null,
             data.preparationTime ?? null,
             data.isAvailable ?? null,
-            id
+            id, tenantId
         ]);
         const updated = await this.findById(id);
         if (!updated) {
@@ -91,10 +97,11 @@ let MenuItemsRepository = class MenuItemsRepository {
         return updated;
     }
     async delete(id) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
         DELETE FROM menu_items
-        WHERE id = ?
-      `, [id]);
+        WHERE id = ? AND tenant_id = ?
+      `, [id, tenantId]);
         const affectedRows = Number(result.affectedRows);
         if (affectedRows === 0) {
             throw new common_1.NotFoundException('Menu item not found');
@@ -105,5 +112,5 @@ exports.MenuItemsRepository = MenuItemsRepository;
 exports.MenuItemsRepository = MenuItemsRepository = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_constants_1.MYSQL_POOL)),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [Object, tenant_context_service_1.TenantContextService])
 ], MenuItemsRepository);

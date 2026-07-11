@@ -12,10 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtAuthGuard = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("../auth.service");
+const tenant_context_service_1 = require("../../tenants/tenant-context.service");
 let JwtAuthGuard = class JwtAuthGuard {
     authService;
-    constructor(authService) {
+    tenantContext;
+    constructor(authService, tenantContext) {
         this.authService = authService;
+        this.tenantContext = tenantContext;
     }
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();
@@ -24,8 +27,16 @@ let JwtAuthGuard = class JwtAuthGuard {
         request.user = {
             id: payload.sub,
             email: payload.email,
-            role: payload.role
+            role: payload.role,
+            tenantId: payload.tenantId
         };
+        if (payload.role !== 'PLATFORM_ADMIN') {
+            const tenant = this.tenantContext.current();
+            if (!tenant || payload.tenantId !== tenant.id)
+                throw new common_1.ForbiddenException('Tenant access denied');
+            if (!['TRIAL', 'ACTIVE', 'PAST_DUE'].includes(tenant.status))
+                throw new common_1.ForbiddenException('Restaurant subscription is suspended');
+        }
         return true;
     }
     extractBearerToken(request) {
@@ -43,5 +54,5 @@ let JwtAuthGuard = class JwtAuthGuard {
 exports.JwtAuthGuard = JwtAuthGuard;
 exports.JwtAuthGuard = JwtAuthGuard = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [auth_service_1.AuthService])
+    __metadata("design:paramtypes", [auth_service_1.AuthService, tenant_context_service_1.TenantContextService])
 ], JwtAuthGuard);

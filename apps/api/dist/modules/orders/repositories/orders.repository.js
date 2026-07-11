@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersRepository = void 0;
 const common_1 = require("@nestjs/common");
 const database_constants_1 = require("../../database/database.constants");
+const tenant_context_service_1 = require("../../tenants/tenant-context.service");
 const ALLOWED_TRANSITIONS = {
     PENDING: ['PREPARING', 'CANCELLED'],
     PREPARING: ['READY', 'CANCELLED'],
@@ -24,8 +25,10 @@ const ALLOWED_TRANSITIONS = {
 };
 let OrdersRepository = class OrdersRepository {
     pool;
-    constructor(pool) {
+    tenantContext;
+    constructor(pool, tenantContext) {
         this.pool = pool;
+        this.tenantContext = tenantContext;
     }
     async findAll1(status) {
         const [rows] = await this.pool.execute(`
@@ -50,28 +53,31 @@ let OrdersRepository = class OrdersRepository {
         return rows;
     }
     async findAll(status) {
+        const tenantId = this.tenantContext.requireId();
         // This approach allows MySQL to use an index on `created_at`
         const queryConditions = status
-            ? 'WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY AND status = ?'
-            : 'WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY';
+            ? 'WHERE tenant_id = ? AND created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY AND status = ?'
+            : 'WHERE tenant_id = ? AND created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY';
         const [rows] = await this.pool.execute(`
       SELECT id, order_number, table_id, status, total, created_at, updated_at
       FROM orders
       ${queryConditions}
       ORDER BY created_at DESC
-    `, status ? [status] : []);
+    `, status ? [tenantId, status] : [tenantId]);
         return rows;
     }
     async findById(id) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, order_number, table_id, status, total, created_at, updated_at
         FROM orders
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         LIMIT 1
-      `, [id]);
+      `, [id, tenantId]);
         return rows[0] ?? null;
     }
     async findItemsByOrderId(orderId) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
       SELECT
         oi.id,
@@ -85,12 +91,13 @@ let OrdersRepository = class OrdersRepository {
       FROM order_items oi
       JOIN menu_items mi
         ON mi.id = oi.menu_item_id
-      WHERE oi.order_id = ?
+      WHERE oi.order_id = ? AND EXISTS (SELECT 1 FROM orders o WHERE o.id = oi.order_id AND o.tenant_id = ?)
       ORDER BY oi.id ASC
-    `, [orderId]);
+    `, [orderId, tenantId]);
         return rows;
     }
     async resolveMenuItems(items) {
+        const tenantId = this.tenantContext.requireId();
         if (items.length === 0) {
             throw new common_1.BadRequestException('Order must contain at least one item');
         }
@@ -99,9 +106,9 @@ let OrdersRepository = class OrdersRepository {
             const [rows] = await this.pool.execute(`
           SELECT id, price, preparation_time
           FROM menu_items
-          WHERE id = ? AND is_available = TRUE
+          WHERE id = ? AND tenant_id = ? AND is_available = TRUE
           LIMIT 1
-        `, [item.menuItemId]);
+        `, [item.menuItemId, tenantId]);
             const menuItem = rows[0];
             if (!menuItem) {
                 throw new common_1.BadRequestException(`Menu item ${item.menuItemId} is unavailable`);
@@ -117,15 +124,16 @@ let OrdersRepository = class OrdersRepository {
         return resolved;
     }
     async createOrder(orderNumber, tableId, items) {
+        const tenantId = this.tenantContext.requireId();
         const connection = await this.pool.getConnection();
         try {
             await connection.beginTransaction();
             const [tableRows] = await connection.execute(`
           SELECT id, status
           FROM \`tables\`
-          WHERE id = ?
+          WHERE id = ? AND tenant_id = ?
           LIMIT 1
-        `, [tableId]);
+        `, [tableId, tenantId]);
             const table = tableRows[0];
             if (!table) {
                 throw new common_1.NotFoundException('Table not found');
@@ -137,9 +145,9 @@ let OrdersRepository = class OrdersRepository {
                 .reduce((sum, item) => sum + Number(item.price) * item.quantity, 0)
                 .toFixed(2);
             const [insertResult] = await connection.execute(`
-          INSERT INTO orders (order_number, table_id, status, total)
-          VALUES (?, ?, 'PENDING', ?)
-        `, [orderNumber, tableId, total]);
+          INSERT INTO orders (tenant_id, order_number, table_id, status, total)
+          VALUES (?, ?, ?, 'PENDING', ?)
+        `, [tenantId, orderNumber, tableId, total]);
             const orderId = Number(insertResult.insertId);
             const itemInserts = items.map((item) => [
                 orderId,
@@ -155,8 +163,8 @@ let OrdersRepository = class OrdersRepository {
             await connection.execute(`
           UPDATE \`tables\`
           SET status = 'OCCUPIED'
-          WHERE id = ?
-        `, [tableId]);
+          WHERE id = ? AND tenant_id = ?
+        `, [tableId, tenantId]);
             await connection.commit();
             const created = await this.findById(orderId);
             if (!created) {
@@ -173,6 +181,7 @@ let OrdersRepository = class OrdersRepository {
         }
     }
     async updateStatus(id, status) {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new common_1.NotFoundException('Order not found');
@@ -187,14 +196,14 @@ let OrdersRepository = class OrdersRepository {
             await connection.execute(`
           UPDATE orders
           SET status = ?
-          WHERE id = ?
-        `, [status, id]);
+          WHERE id = ? AND tenant_id = ?
+        `, [status, id, tenantId]);
             if (status === 'DELIVERED' || status === 'CANCELLED') {
                 await connection.execute(`
             UPDATE \`tables\`
             SET status = 'AVAILABLE'
-            WHERE id = ?
-          `, [existing.table_id]);
+            WHERE id = ? AND tenant_id = ?
+          `, [existing.table_id, tenantId]);
             }
             await connection.commit();
         }
@@ -212,12 +221,13 @@ let OrdersRepository = class OrdersRepository {
         return updated;
     }
     async estimatePrepTimeForOrder(orderId) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT MAX(mi.preparation_time) AS max_time
         FROM order_items oi
         INNER JOIN menu_items mi ON mi.id = oi.menu_item_id
-        WHERE oi.order_id = ?
-      `, [orderId]);
+        WHERE oi.order_id = ? AND EXISTS (SELECT 1 FROM orders o WHERE o.id = oi.order_id AND o.tenant_id = ?)
+      `, [orderId, tenantId]);
         return Number(rows[0]?.max_time ?? 0);
     }
 };
@@ -225,5 +235,5 @@ exports.OrdersRepository = OrdersRepository;
 exports.OrdersRepository = OrdersRepository = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_constants_1.MYSQL_POOL)),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [Object, tenant_context_service_1.TenantContextService])
 ], OrdersRepository);

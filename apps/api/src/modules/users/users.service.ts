@@ -27,6 +27,7 @@ export class UsersService {
     email: string;
     password: string;
     role: UserRole;
+    tenantId?: number | null;
   }): Promise<PublicUser> {
     const existing = await this.usersRepository.findByEmail(data.email);
     if (existing) {
@@ -37,7 +38,8 @@ export class UsersService {
       name: data.name,
       email: data.email,
       passwordHash,
-      role: data.role
+      role: data.role,
+      tenantId: data.tenantId
     });
     return toPublicUser(user);
   }

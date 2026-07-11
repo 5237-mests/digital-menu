@@ -1,8 +1,10 @@
 import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { AuthService } from '../auth.service';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 export declare class JwtAuthGuard implements CanActivate {
     private readonly authService;
-    constructor(authService: AuthService);
+    private readonly tenantContext;
+    constructor(authService: AuthService, tenantContext: TenantContextService);
     canActivate(context: ExecutionContext): Promise<boolean>;
     private extractBearerToken;
 }

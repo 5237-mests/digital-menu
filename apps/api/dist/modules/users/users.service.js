@@ -40,7 +40,8 @@ let UsersService = class UsersService {
             name: data.name,
             email: data.email,
             passwordHash,
-            role: data.role
+            role: data.role,
+            tenantId: data.tenantId
         });
         return (0, user_record_1.toPublicUser)(user);
     }

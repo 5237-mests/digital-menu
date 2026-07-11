@@ -5,7 +5,7 @@ import { test } from 'node:test';
 test('categories controller exposes CRUD and RBAC guards', async () => {
   const source = await readFile(new URL('../src/modules/categories/categories.controller.ts', import.meta.url), 'utf8');
 
-  for (const pattern of [/@Get\(\)/, /@Post\(\)/, /@Put\(':id'\)/, /@Delete\(':id'\)/, /@Roles\('ADMIN'\)/]) {
+  for (const pattern of [/@Get\(\)/, /@Post\(\)/, /@Put\(':id'\)/, /@Delete\(':id'\)/, /@Roles\('OWNER', 'ADMIN'\)/]) {
     assert.match(source, pattern);
   }
 });

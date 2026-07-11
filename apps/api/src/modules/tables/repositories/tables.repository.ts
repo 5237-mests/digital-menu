@@ -1,46 +1,50 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Pool, ResultSetHeader } from 'mysql2/promise';
 import { MYSQL_POOL } from '../../database/database.constants';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 import type { TableRecord } from '../types/table-record';
 
 @Injectable()
 export class TablesRepository {
-    constructor(@Inject(MYSQL_POOL) private readonly pool: Pool) { }
+    constructor(@Inject(MYSQL_POOL) private readonly pool: Pool, private readonly tenantContext: TenantContextService) { }
 
     async findAll(): Promise<TableRecord[]> {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute<TableRecord[]>(
             `
         SELECT id, table_number, qr_code, status, created_at, updated_at
-        FROM \`tables\`
+        FROM \`tables\` WHERE tenant_id = ?
         ORDER BY table_number ASC
       `
-        );
+        , [tenantId]);
 
         return rows;
     }
 
     async findByQrCode(qrCode: string): Promise<TableRecord | null> {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute<TableRecord[]>(
             `
         SELECT id, table_number, qr_code, status, created_at, updated_at
         FROM \`tables\`
-        WHERE qr_code = ?
+        WHERE qr_code = ? AND tenant_id = ?
         LIMIT 1
       `,
-            [qrCode]
+            [qrCode, tenantId]
         );
 
         return rows[0] ?? null;
     }
 
     async updateStatus(id: number, status: 'AVAILABLE' | 'OCCUPIED' | 'DISABLED'): Promise<void> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute<ResultSetHeader>(
             `
         UPDATE \`tables\`
         SET status = ?
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
-            [status, id]
+            [status, id, tenantId]
         );
 
         if (Number(result.affectedRows) === 0) {
@@ -49,14 +53,15 @@ export class TablesRepository {
     }
 
     async findById(id: number): Promise<TableRecord | null> {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute<TableRecord[]>(
             `
         SELECT id, table_number, qr_code, status, created_at, updated_at
         FROM \`tables\`
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         LIMIT 1
       `,
-            [id]
+            [id, tenantId]
         );
 
         return rows[0] ?? null;
@@ -67,12 +72,13 @@ export class TablesRepository {
         qrCode: string;
         status: 'AVAILABLE' | 'OCCUPIED' | 'DISABLED';
     }): Promise<TableRecord> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(
             `
-        INSERT INTO \`tables\` (table_number, qr_code, status)
-        VALUES (?, ?, ?)
+        INSERT INTO \`tables\` (tenant_id, table_number, qr_code, status)
+        VALUES (?, ?, ?, ?)
       `,
-            [data.tableNumber, data.qrCode, data.status]
+            [tenantId, data.tableNumber, data.qrCode, data.status]
         );
 
         const insertId = Number((result as { insertId: number }).insertId);
@@ -89,6 +95,7 @@ export class TablesRepository {
         qrCode?: string;
         status?: 'AVAILABLE' | 'OCCUPIED' | 'DISABLED';
     }): Promise<TableRecord> {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new NotFoundException('Table not found');
@@ -100,9 +107,9 @@ export class TablesRepository {
         SET table_number = COALESCE(?, table_number),
             qr_code = COALESCE(?, qr_code),
             status = COALESCE(?, status)
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
-            [data.tableNumber ?? null, data.qrCode ?? null, data.status ?? null, id]
+            [data.tableNumber ?? null, data.qrCode ?? null, data.status ?? null, id, tenantId]
         );
 
         const updated = await this.findById(id);
@@ -114,12 +121,13 @@ export class TablesRepository {
     }
 
     async delete(id: number): Promise<void> {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute<ResultSetHeader>(
             `
         DELETE FROM \`tables\`
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
       `,
-            [id]
+            [id, tenantId]
         );
 
         const affectedRows = Number(result.affectedRows);

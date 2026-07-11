@@ -11,6 +11,7 @@ export declare class UsersService {
         email: string;
         password: string;
         role: UserRole;
+        tenantId?: number | null;
     }): Promise<PublicUser>;
     update(id: number, data: {
         name?: string;

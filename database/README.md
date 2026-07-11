@@ -28,6 +28,16 @@ Run both:
 pnpm db:setup
 ```
 
+## SaaS clean database
+
+The SaaS application uses a separate, complete baseline schema and never alters an existing single-restaurant database. Create an empty MySQL database, point the normal `MYSQL_*` variables at it, then run:
+
+```bash
+pnpm db:saas:setup
+```
+
+This runs `saas/migrations/001_initial_saas_schema.sql` and its idempotent demo seed. Do not run the legacy `db:setup` commands against the SaaS database.
+
 ## Structure
 
 - `migrations/` contains ordered schema changes.

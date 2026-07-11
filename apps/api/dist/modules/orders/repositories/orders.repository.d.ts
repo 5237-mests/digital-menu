@@ -1,4 +1,5 @@
 import type { Pool } from 'mysql2/promise';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 import type { OrderItemRecord } from '../types/order-item-record';
 import type { OrderRecord, OrderStatus } from '../types/order-record';
 export interface NewOrderItemInput {
@@ -15,7 +16,8 @@ export interface ResolvedOrderItem {
 }
 export declare class OrdersRepository {
     private readonly pool;
-    constructor(pool: Pool);
+    private readonly tenantContext;
+    constructor(pool: Pool, tenantContext: TenantContextService);
     findAll1(status?: OrderStatus): Promise<OrderRecord[]>;
     findAll2(status?: OrderStatus): Promise<OrderRecord[]>;
     findAll(status?: OrderStatus): Promise<OrderRecord[]>;

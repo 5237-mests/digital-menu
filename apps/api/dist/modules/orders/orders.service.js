@@ -12,15 +12,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersService = void 0;
 const common_1 = require("@nestjs/common");
 const realtime_gateway_1 = require("../realtime/realtime.gateway");
+const tenant_context_service_1 = require("../tenants/tenant-context.service");
 const orders_repository_1 = require("./repositories/orders.repository");
 const order_item_record_1 = require("./types/order-item-record");
 const order_record_1 = require("./types/order-record");
 let OrdersService = class OrdersService {
     ordersRepository;
     realtimeGateway;
-    constructor(ordersRepository, realtimeGateway) {
+    tenantContext;
+    constructor(ordersRepository, realtimeGateway, tenantContext) {
         this.ordersRepository = ordersRepository;
         this.realtimeGateway = realtimeGateway;
+        this.tenantContext = tenantContext;
     }
     async findAll(status) {
         const rows = await this.ordersRepository.findAll(status);
@@ -49,7 +52,7 @@ let OrdersService = class OrdersService {
             items: items.map(order_item_record_1.toOrderItemDto),
             estimatedPrepTime: resolvedItems.reduce((max, item) => Math.max(max, item.preparationTime), 0)
         };
-        this.realtimeGateway.emitOrderCreated(response);
+        this.realtimeGateway.emitOrderCreated(this.tenantContext.requireId(), response);
         return response;
     }
     async updateStatus(id, status) {
@@ -60,7 +63,7 @@ let OrdersService = class OrdersService {
             items: items.map(order_item_record_1.toOrderItemDto),
             estimatedPrepTime: await this.ordersRepository.estimatePrepTimeForOrder(id)
         };
-        this.realtimeGateway.emitOrderUpdated(response);
+        this.realtimeGateway.emitOrderUpdated(this.tenantContext.requireId(), response);
         return response;
     }
 };
@@ -68,5 +71,6 @@ exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [orders_repository_1.OrdersRepository,
-        realtime_gateway_1.RealtimeGateway])
+        realtime_gateway_1.RealtimeGateway,
+        tenant_context_service_1.TenantContextService])
 ], OrdersService);

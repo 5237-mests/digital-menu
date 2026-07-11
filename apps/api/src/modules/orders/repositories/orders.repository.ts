@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { Pool, PoolConnection, ResultSetHeader } from 'mysql2/promise';
 import { MYSQL_POOL } from '../../database/database.constants';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 import type { OrderItemRecord } from '../types/order-item-record';
 import type { OrderRecord, OrderStatus } from '../types/order-record';
 
@@ -33,7 +34,7 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 
 @Injectable()
 export class OrdersRepository {
-  constructor(@Inject(MYSQL_POOL) private readonly pool: Pool) { }
+  constructor(@Inject(MYSQL_POOL) private readonly pool: Pool, private readonly tenantContext: TenantContextService) { }
 
   async findAll1(status?: OrderStatus): Promise<OrderRecord[]> {
     const [rows] = await this.pool.execute<OrderRecord[]>(
@@ -67,10 +68,11 @@ export class OrdersRepository {
     return rows;
   }
   async findAll(status?: OrderStatus): Promise<OrderRecord[]> {
+    const tenantId = this.tenantContext.requireId();
     // This approach allows MySQL to use an index on `created_at`
     const queryConditions = status
-      ? 'WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY AND status = ?'
-      : 'WHERE created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY';
+      ? 'WHERE tenant_id = ? AND created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY AND status = ?'
+      : 'WHERE tenant_id = ? AND created_at >= CURDATE() AND created_at < CURDATE() + INTERVAL 1 DAY';
 
     const [rows] = await this.pool.execute<OrderRecord[]>(
       `
@@ -79,27 +81,29 @@ export class OrdersRepository {
       ${queryConditions}
       ORDER BY created_at DESC
     `,
-      status ? [status] : []
+      status ? [tenantId, status] : [tenantId]
     );
 
     return rows;
   }
 
   async findById(id: number): Promise<OrderRecord | null> {
+    const tenantId = this.tenantContext.requireId();
     const [rows] = await this.pool.execute<OrderRecord[]>(
       `
         SELECT id, order_number, table_id, status, total, created_at, updated_at
         FROM orders
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         LIMIT 1
       `,
-      [id]
+      [id, tenantId]
     );
 
     return rows[0] ?? null;
   }
 
   async findItemsByOrderId(orderId: number): Promise<OrderItemRecord[]> {
+    const tenantId = this.tenantContext.requireId();
     const [rows] = await this.pool.execute<OrderItemRecord[]>(
       `
       SELECT
@@ -114,16 +118,17 @@ export class OrdersRepository {
       FROM order_items oi
       JOIN menu_items mi
         ON mi.id = oi.menu_item_id
-      WHERE oi.order_id = ?
+      WHERE oi.order_id = ? AND EXISTS (SELECT 1 FROM orders o WHERE o.id = oi.order_id AND o.tenant_id = ?)
       ORDER BY oi.id ASC
     `,
-      [orderId]
+      [orderId, tenantId]
     );
 
     return rows;
   }
 
   async resolveMenuItems(items: NewOrderItemInput[]): Promise<ResolvedOrderItem[]> {
+    const tenantId = this.tenantContext.requireId();
     if (items.length === 0) {
       throw new BadRequestException('Order must contain at least one item');
     }
@@ -135,10 +140,10 @@ export class OrdersRepository {
         `
           SELECT id, price, preparation_time
           FROM menu_items
-          WHERE id = ? AND is_available = TRUE
+          WHERE id = ? AND tenant_id = ? AND is_available = TRUE
           LIMIT 1
         `,
-        [item.menuItemId]
+        [item.menuItemId, tenantId]
       );
 
       const menuItem = rows[0];
@@ -159,6 +164,7 @@ export class OrdersRepository {
   }
 
   async createOrder(orderNumber: string, tableId: number, items: ResolvedOrderItem[]): Promise<OrderRecord> {
+    const tenantId = this.tenantContext.requireId();
     const connection = await this.pool.getConnection();
 
     try {
@@ -168,10 +174,10 @@ export class OrdersRepository {
         `
           SELECT id, status
           FROM \`tables\`
-          WHERE id = ?
+          WHERE id = ? AND tenant_id = ?
           LIMIT 1
         `,
-        [tableId]
+        [tableId, tenantId]
       );
 
       const table = tableRows[0];
@@ -188,10 +194,10 @@ export class OrdersRepository {
 
       const [insertResult] = await connection.execute<ResultSetHeader>(
         `
-          INSERT INTO orders (order_number, table_id, status, total)
-          VALUES (?, ?, 'PENDING', ?)
+          INSERT INTO orders (tenant_id, order_number, table_id, status, total)
+          VALUES (?, ?, ?, 'PENDING', ?)
         `,
-        [orderNumber, tableId, total]
+        [tenantId, orderNumber, tableId, total]
       );
 
       const orderId = Number(insertResult.insertId);
@@ -215,9 +221,9 @@ export class OrdersRepository {
         `
           UPDATE \`tables\`
           SET status = 'OCCUPIED'
-          WHERE id = ?
+          WHERE id = ? AND tenant_id = ?
         `,
-        [tableId]
+        [tableId, tenantId]
       );
 
       await connection.commit();
@@ -237,6 +243,7 @@ export class OrdersRepository {
   }
 
   async updateStatus(id: number, status: OrderStatus): Promise<OrderRecord> {
+    const tenantId = this.tenantContext.requireId();
     const existing = await this.findById(id);
     if (!existing) {
       throw new NotFoundException('Order not found');
@@ -256,9 +263,9 @@ export class OrdersRepository {
         `
           UPDATE orders
           SET status = ?
-          WHERE id = ?
+          WHERE id = ? AND tenant_id = ?
         `,
-        [status, id]
+        [status, id, tenantId]
       );
 
       if (status === 'DELIVERED' || status === 'CANCELLED') {
@@ -266,9 +273,9 @@ export class OrdersRepository {
           `
             UPDATE \`tables\`
             SET status = 'AVAILABLE'
-            WHERE id = ?
+            WHERE id = ? AND tenant_id = ?
           `,
-          [existing.table_id]
+          [existing.table_id, tenantId]
         );
       }
 
@@ -289,14 +296,15 @@ export class OrdersRepository {
   }
 
   async estimatePrepTimeForOrder(orderId: number): Promise<number> {
+    const tenantId = this.tenantContext.requireId();
     const [rows] = await this.pool.execute<Array<{ max_time: number | null } & import('mysql2').RowDataPacket>>(
       `
         SELECT MAX(mi.preparation_time) AS max_time
         FROM order_items oi
         INNER JOIN menu_items mi ON mi.id = oi.menu_item_id
-        WHERE oi.order_id = ?
+        WHERE oi.order_id = ? AND EXISTS (SELECT 1 FROM orders o WHERE o.id = oi.order_id AND o.tenant_id = ?)
       `,
-      [orderId]
+      [orderId, tenantId]
     );
 
     return Number(rows[0]?.max_time ?? 0);

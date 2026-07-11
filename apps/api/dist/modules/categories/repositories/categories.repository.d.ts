@@ -1,8 +1,10 @@
 import type { Pool } from 'mysql2/promise';
+import { TenantContextService } from '../../tenants/tenant-context.service';
 import type { CategoryRecord } from '../types/category-record';
 export declare class CategoriesRepository {
     private readonly pool;
-    constructor(pool: Pool);
+    private readonly tenantContext;
+    constructor(pool: Pool, tenantContext: TenantContextService);
     findAll(includeInactive?: boolean): Promise<CategoryRecord[]>;
     findById(id: number, includeInactive?: boolean): Promise<CategoryRecord | null>;
     create(data: {

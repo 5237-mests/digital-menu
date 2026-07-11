@@ -15,35 +15,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoriesRepository = void 0;
 const common_1 = require("@nestjs/common");
 const database_constants_1 = require("../../database/database.constants");
+const tenant_context_service_1 = require("../../tenants/tenant-context.service");
 let CategoriesRepository = class CategoriesRepository {
     pool;
-    constructor(pool) {
+    tenantContext;
+    constructor(pool, tenantContext) {
         this.pool = pool;
+        this.tenantContext = tenantContext;
     }
     async findAll(includeInactive = false) {
         const [rows] = await this.pool.execute(`
         SELECT id, name, image, is_active, sort_order, created_at, updated_at
         FROM categories
-        ${includeInactive ? '' : 'WHERE is_active = TRUE'}
+        WHERE tenant_id = ? ${includeInactive ? '' : 'AND is_active = TRUE'}
         ORDER BY sort_order ASC, name ASC
-      `);
+      `, [this.tenantContext.requireId()]);
         return rows;
     }
     async findById(id, includeInactive = false) {
+        const tenantId = this.tenantContext.requireId();
         const [rows] = await this.pool.execute(`
         SELECT id, name, image, is_active, sort_order, created_at, updated_at
         FROM categories
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
         ${includeInactive ? '' : 'AND is_active = TRUE'}
         LIMIT 1
-      `, [id]);
+      `, [id, tenantId]);
         return rows[0] ?? null;
     }
     async create(data) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
-        INSERT INTO categories (name, image, is_active, sort_order)
-        VALUES (?, ?, ?, ?)
-      `, [data.name, data.image ?? null, data.isActive ?? true, data.sortOrder ?? 0]);
+        INSERT INTO categories (tenant_id, name, image, is_active, sort_order)
+        VALUES (?, ?, ?, ?, ?)
+      `, [tenantId, data.name, data.image ?? null, data.isActive ?? true, data.sortOrder ?? 0]);
         const insertId = Number(result.insertId);
         const created = await this.findById(insertId);
         if (!created) {
@@ -52,6 +57,7 @@ let CategoriesRepository = class CategoriesRepository {
         return created;
     }
     async update(id, data) {
+        const tenantId = this.tenantContext.requireId();
         const existing = await this.findById(id);
         if (!existing) {
             throw new common_1.NotFoundException('Category not found');
@@ -62,8 +68,8 @@ let CategoriesRepository = class CategoriesRepository {
             image = COALESCE(?, image),
             is_active = COALESCE(?, is_active),
             sort_order = COALESCE(?, sort_order)
-        WHERE id = ?
-      `, [data.name ?? null, data.image ?? null, data.isActive ?? null, data.sortOrder ?? null, id]);
+        WHERE id = ? AND tenant_id = ?
+      `, [data.name ?? null, data.image ?? null, data.isActive ?? null, data.sortOrder ?? null, id, tenantId]);
         const updated = await this.findById(id);
         if (!updated) {
             throw new Error('Failed to reload category after update');
@@ -71,10 +77,11 @@ let CategoriesRepository = class CategoriesRepository {
         return updated;
     }
     async delete(id) {
+        const tenantId = this.tenantContext.requireId();
         const [result] = await this.pool.execute(`
         DELETE FROM categories
-        WHERE id = ?
-      `, [id]);
+        WHERE id = ? AND tenant_id = ?
+      `, [id, tenantId]);
         const affectedRows = Number(result.affectedRows);
         if (affectedRows === 0) {
             throw new common_1.NotFoundException('Category not found');
@@ -85,5 +92,5 @@ exports.CategoriesRepository = CategoriesRepository;
 exports.CategoriesRepository = CategoriesRepository = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(database_constants_1.MYSQL_POOL)),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [Object, tenant_context_service_1.TenantContextService])
 ], CategoriesRepository);

@@ -33,14 +33,14 @@ export class CategoriesController {
 
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     create(@Body() dto: CreateCategoryDto): Promise<CategoryDto> {
         return this.categoriesService.create(dto);
     }
 
     @Put(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     update(
         @Param('id', ParseIntPipe) id: number,
         @Body() dto: UpdateCategoryDto
@@ -50,7 +50,7 @@ export class CategoriesController {
 
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN')
+    @Roles('OWNER', 'ADMIN')
     remove(@Param('id', ParseIntPipe) id: number): Promise<{ readonly success: true }> {
         return this.categoriesService.remove(id).then(() => ({ success: true }));
     }

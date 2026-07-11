@@ -15,7 +15,7 @@ export class CreateUserDto {
   @MaxLength(128)
   password!: string;
 
-  @IsEnum(['ADMIN', 'CHEF'])
+  @IsEnum(['OWNER', 'ADMIN', 'CHEF'])
   role!: UserRole;
 }
 
@@ -37,6 +37,6 @@ export class UpdateUserDto {
   password?: string;
 
   @IsOptional()
-  @IsEnum(['ADMIN', 'CHEF'])
+  @IsEnum(['OWNER', 'ADMIN', 'CHEF'])
   role?: UserRole;
 }

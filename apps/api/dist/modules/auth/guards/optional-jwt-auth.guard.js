@@ -32,7 +32,8 @@ let OptionalJwtAuthGuard = class OptionalJwtAuthGuard {
             request.user = {
                 id: payload.sub,
                 email: payload.email,
-                role: payload.role
+                role: payload.role,
+                tenantId: payload.tenantId
             };
         }
         catch {
